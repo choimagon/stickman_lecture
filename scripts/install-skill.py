@@ -42,6 +42,8 @@ def install_copy(destination: Path) -> None:
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("skill_dir", nargs="?", type=Path, help="skills directory (default: CODEX_HOME/skills or ~/.codex/skills)")
     args = parser.parse_args()

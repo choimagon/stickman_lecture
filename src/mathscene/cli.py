@@ -146,7 +146,7 @@ def build_video(lesson, scene_file, node, home, work, preview, audio, bubble_sou
     visuals = visual_cues(segments) if visual_sound else []
     cues = [(frame, "bubble") for frame in bubbles] + visuals
     with ThreadPoolExecutor(max_workers=2) as executor:
-        manim = executor.submit(run, "manim", [sys.executable, "-m", "mathscene.manim_render", str(work),
+        manim = executor.submit(run, "manim", [sys.executable, "-X", "utf8", "-m", "mathscene.manim_render", str(work),
                                                str(width), str(height)], work)
         capture = executor.submit(bridge, "capture", node, home, work, scene_file, work, width, height, ffmpeg)
         manim.result()
@@ -409,6 +409,10 @@ def player(args):
 
 
 def main(argv=None):
+    # Windows pipes can default to a code page that cannot encode a lesson title.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(prog="stickman-lecture", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     diagnostic = commands.add_parser("doctor", help="check Node, Chromium and optional video dependencies")
