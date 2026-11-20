@@ -17,4 +17,4 @@ macOS arm64에서 Python 3.12, ManimCE 0.20.1, Chromium 145, FFmpeg 8.1로 검�
 
 현재 그리기 대상은 선, 방향 화살표, 꺾은선, 가우시안 곡선, 원, 타원, 사각형, 다각형이다. 수식은 단계별로 표시하거나 교체할 수 있다. 연속적인 수식 변형, 3D, 립싱크는 후속 범위다. 자동 검증은 장면 안의 표본 시각과 작성자가 정의한 수치 주장을 대상으로 한다.
 
-`--narration`은 말풍선에 맞춰 로컬에서 음성을 합성하고 MP4와 조작 가능한 HTML에 같은 시간표를 적용한다. Windows와 Ubuntu 계열 Linux 설치법을 README에 문서화했다. 실제 렌더링 검증 환경은 macOS arm64다.
+`--narration`은 말풍선에 맞춰 로컬에서 음성을 합성하고 MP4와 조작 가능한 HTML에 같은 시간표를 적용한다. 수레 예제로 macOS arm64, Windows x64, Ubuntu 24.04 x64에서 음성 합성, MP4 인코딩과 디코딩, 오프라인 HTML 재생과 음소거를 확인했다. Python 3.12에서 현재 테스트 27개가 통과했다. [Windows·Ubuntu 자동 테스트](https://github.com/choimagon/stickman_lecture/actions/workflows/portability.yml)

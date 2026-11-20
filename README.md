@@ -21,6 +21,8 @@
 
 Windows, macOS, Ubuntu 계열 Linux에서 Python 3.11–3.13과 Node.js 22.12 이상을 사용한다. 설치 후 Codex에서 `$stickman-lecture`를 호출할 수 있다.
 
+음성 포함 MP4와 HTML 내보내기는 macOS arm64, Windows x64, Ubuntu 24.04 x64에서 Python 3.12로 검증했다. [Windows·Ubuntu 자동 테스트](https://github.com/choimagon/stickman_lecture/actions/workflows/portability.yml)
+
 ### macOS
 
 ```bash
@@ -52,7 +54,7 @@ Python 3.11–3.13, Node.js 22.12 이상, FFmpeg와 Git을 PowerShell에서 사�
 ```powershell
 git clone https://github.com/choimagon/stickman_lecture.git
 cd stickman_lecture
-py -3.11 -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e '.[video,test]'
 npm ci
 npm run browser:install
@@ -60,7 +62,7 @@ npm run browser:install
 .\.venv\Scripts\python.exe scripts/install-skill.py
 ```
 
-설치된 Python 버전에 맞춰 `py -3.11`을 `py -3.12` 또는 `py -3.13`으로 바꿀 수 있다. 설치 스크립트는 기본적으로 스킬을 저장소에 연결하며 기존의 다른 스킬을 덮어쓰지 않는다. Windows에서 심볼릭 링크를 만들 권한이 없으면 스킬을 복사하고 `.runtime-root`에 저장소 경로를 기록한다. 복사 설치 후 스킬을 갱신하려면 같은 저장소에서 설치 스크립트를 다시 실행한다. 저장소를 이동했다면 기존 복사본을 직접 제거한 뒤 새 위치에서 설치한다. 사용자 지정 스킬 폴더는 `python scripts/install-skill.py 경로`로 지정할 수 있다.
+설치된 Python 버전에 맞춰 `py -3.12`를 `py -3.11` 또는 `py -3.13`으로 바꿀 수 있다. 설치 스크립트는 기본적으로 스킬을 저장소에 연결하며 기존의 다른 스킬을 덮어쓰지 않는다. Windows에서 심볼릭 링크를 만들 권한이 없으면 스킬을 복사하고 `.runtime-root`에 저장소 경로를 기록한다. 복사 설치 후 스킬을 갱신하려면 같은 저장소에서 설치 스크립트를 다시 실행한다. 저장소를 이동했다면 기존 복사본을 직접 제거한 뒤 새 위치에서 설치한다. 사용자 지정 스킬 폴더는 `python scripts/install-skill.py 경로`로 지정할 수 있다.
 
 웹 전용 설치는 `python -m pip install -e '.[test]'`과 `stickman-lecture doctor`를 사용한다. 두 모드의 검증에 Chromium이 필요하다. LaTeX 배포판은 필요 없다.
 
