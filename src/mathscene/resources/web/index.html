@@ -33,7 +33,9 @@
           <label class="sr-only" for="seek">재생 위치</label>
           <input type="range" id="seek" min="0" value="0">
           <output id="clock"></output>
+          <button id="voice-toggle" type="button" aria-pressed="true" hidden>음성</button>
         </div>
+        <audio id="narration" preload="metadata" hidden></audio>
         <div id="sliders" hidden></div>
       </section>
       <aside aria-label="강의 목차">

@@ -1,8 +1,10 @@
 import wave
 
 import numpy as np
+import pytest
 
 from mathscene.audio import SAMPLE_RATE, bubble_cues, visual_cues, write_effect_track
+from mathscene.narration import NarrationError, narration_minimums, write_narration
 
 
 def test_bubble_cues_follow_visible_text_changes():
@@ -41,3 +43,23 @@ def test_visual_cues_coalesce_when_elements_appear_together():
         {"frames": 10, "visualEffects": ["shape", "shape"]},
     ]
     assert visual_cues(segments) == [(0, "graph"), (40, "shape")]
+
+
+def test_narration_starts_inside_the_visible_bubbles_and_matches_the_lesson(tmp_path):
+    sample_rate = 1000
+    clips = {"첫 설명": np.full(400, 4000, dtype="<i2"), "마지막": np.full(300, -5000, dtype="<i2")}
+    spans = [{"start": 0, "end": 9, "text": "첫 설명"}, {"start": 15, "end": 25, "text": "마지막"}]
+    assert narration_minimums(clips, sample_rate) == pytest.approx({"첫 설명": .6, "마지막": .5})
+    path = tmp_path / "narration.wav"
+    write_narration(path, spans, clips, 30, 10, sample_rate)
+    with wave.open(str(path), "rb") as stream:
+        assert stream.getnframes() == 3000
+        samples = np.frombuffer(stream.readframes(3000), dtype="<i2")
+    expected = np.zeros(3000, dtype="<i2")
+    expected[100:500] = 4000
+    expected[1600:1900] = -5000
+    np.testing.assert_array_equal(samples, expected)
+
+    spans[0]["end"] = 5
+    with pytest.raises(NarrationError, match="longer than the bubble"):
+        write_narration(path, spans, clips, 30, 10, sample_rate)

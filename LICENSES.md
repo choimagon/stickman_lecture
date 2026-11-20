@@ -14,3 +14,5 @@ MIT 허가문 원문은 각 저장소의 위 커밋에 포함된 `LICENSE` 또�
 ## 실행 의존성
 
 Manim Community Edition, KaTeX, MathJax, FFmpeg, Chromium과 그 하위 패키지는 상류 스킬 저장소와 별도의 라이선스를 가진다. 웹 내보내기는 KaTeX와 글꼴의 고지를 `web/vendor/KATEX-LICENSE`에, 원본 Stick Scene 허가문을 `web/stick-scene.LICENSE.txt`에 저장한다.
+
+선택 기능인 말풍선 음성 합성은 MIT 라이선스의 [Supertonic Python SDK](https://github.com/supertone-oss-archive/supertonic)와 별도로 내려받는 OpenRAIL-M 라이선스의 [Supertonic 3 모델](https://huggingface.co/supertone-oss-archive/supertonic-3)을 사용한다. `voice-setup`으로 모델과 해당 라이선스 파일을 내려받는다.

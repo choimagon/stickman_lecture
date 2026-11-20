@@ -14,8 +14,28 @@
   let current;
   let running = false;
   let animation = 0;
+  let playRequest = 0;
+  let audioFailed = false;
   let overlay;
   const controls = new Map();
+  const audio = globalThis.MATHSCENE_NARRATION ? byId("narration") : null;
+  const voiceToggle = byId("voice-toggle");
+
+  function disableVoice() {
+    audioFailed = true;
+    voiceToggle.disabled = true;
+    voiceToggle.setAttribute("aria-pressed", "false");
+  }
+
+  if (audio) {
+    voiceToggle.hidden = false;
+    audio.addEventListener("error", disableVoice);
+    audio.src = "narration.wav";
+    voiceToggle.onclick = () => {
+      audio.muted = !audio.muted;
+      voiceToggle.setAttribute("aria-pressed", String(!audio.muted));
+    };
+  }
 
   function svg(tag, attributes) {
     const node = document.createElementNS(svgNS, tag);
@@ -155,19 +175,33 @@
     ui.clock.value = time.toFixed(1) + " / " + lesson.duration.toFixed(1) + "초";
   }
 
-  function seek(seconds) {
+  function seek(seconds, syncAudio = true) {
     time = clamp(seconds, 0, lesson.duration);
+    if (syncAudio && audio && !audioFailed) audio.currentTime = time;
     render();
   }
   function playback(value) {
+    const request = ++playRequest;
     running = value;
     ui.play.textContent = running ? "일시정지" : "재생";
     cancelAnimationFrame(animation);
-    if (!running) return;
+    if (!running) {
+      audio?.pause();
+      return;
+    }
     if (time >= lesson.duration) seek(0);
+    if (audio && !audioFailed) {
+      audio.currentTime = time;
+      audio.play().catch(() => {
+        if (request === playRequest && running) disableVoice();
+      });
+    }
     let prior = performance.now();
     const tick = now => {
-      seek(time + Math.max(0, (now - prior) / 1000));
+      const nextTime = audio && !audioFailed && !audio.ended
+        ? audio.currentTime
+        : time + Math.max(0, (now - prior) / 1000);
+      seek(nextTime, false);
       prior = now;
       if (time >= lesson.duration) playback(false);
       else if (running) animation = requestAnimationFrame(tick);

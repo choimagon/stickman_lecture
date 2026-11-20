@@ -92,7 +92,7 @@ def test_incorrect_lessons_fail(mlp, problem, expected):
 def run_browser_core(script, lesson=None):
     core = RESOURCES / "web" / "core.js"
     run = subprocess.run(["node", "-e", script, str(core)], input=json.dumps(lesson), check=True,
-                         capture_output=True, text=True)
+                         capture_output=True, encoding="utf-8")
     return json.loads(run.stdout)
 
 

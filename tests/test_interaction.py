@@ -39,7 +39,7 @@ def test_one_value_connects_the_cart_hand_graph_and_slider():
       console.log(JSON.stringify([sample({}), sample({z:12})]));
     """
     run = subprocess.run(["node", "-e", script, str(core)], input=json.dumps(lesson), capture_output=True,
-                         text=True, check=True)
+                         encoding="utf-8", check=True)
     moving, manual = json.loads(run.stdout)
     assert moving["z"] == 10 and moving["cart"] == 363 and moving["speed"] > 0
     assert moving["hand"] == moving["handle"] - 8

@@ -6,7 +6,7 @@ import {readFile, writeFile} from "node:fs/promises";
 import {dirname, extname, join, resolve, sep} from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
 import "./web/core.js";
-import {paceLesson, visibleBubbles} from "./pacing.mjs";
+import {paceLesson, speechSpans, visibleBubbles} from "./pacing.mjs";
 
 const [command, dependencyDir, ...args] = process.argv.slice(2);
 const require = createRequire(join(dependencyDir, "package.json"));
@@ -31,9 +31,15 @@ function visualEffects(scene, current, previousIds, point, fps) {
     }).filter(Boolean);
 }
 
-async function pace(sceneFile, dest) {
+async function pace(sceneFile, dest, minimumsFile) {
   const lesson = JSON.parse(await readFile(sceneFile, "utf8"));
-  await writeFile(dest, JSON.stringify(paceLesson(lesson)));
+  const minimums = minimumsFile ? JSON.parse(await readFile(minimumsFile, "utf8")) : {};
+  await writeFile(dest, JSON.stringify(paceLesson(lesson, minimums)));
+}
+
+async function speechPlan(sceneFile, dest) {
+  const lesson = JSON.parse(await readFile(sceneFile, "utf8"));
+  await writeFile(dest, JSON.stringify(speechSpans(lesson)));
 }
 
 async function prepare(sceneFile, work) {
@@ -211,7 +217,8 @@ async function capture(sceneFile, work, w, h, ffmpeg) {
 }
 
 async function serve(root) {
-  const types = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2"};
+  const types = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2",
+    ".wav": "audio/wav"};
   const server = createServer(async (request, response) => {
     try {
       const pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
@@ -366,6 +373,28 @@ async function verify(web, work, preview) {
     const offline = await browser.newPage({offline: true});
     await offline.goto(pathToFileURL(join(web, "index.html")).href);
     await offline.waitForFunction(() => !!window.mathscenePlayer);
+    if (await offline.evaluate(() => globalThis.MATHSCENE_NARRATION === true)) {
+      const position = await offline.evaluate(() => {
+        const {scenes, duration} = globalThis.MATHSCENE_LESSON;
+        const time = scenes[1]?.start ?? duration / 2;
+        globalThis.mathscenePlayer.seek(time);
+        return time;
+      });
+      const voice = offline.locator("#voice-toggle");
+      await voice.click();
+      const muted = await offline.locator("#narration").evaluate(audio => audio.muted);
+      if (!muted || await voice.getAttribute("aria-pressed") !== "false") throw Error("narration mute failed");
+      await offline.locator("#play").click();
+      await offline.waitForFunction(start => {
+        const audio = document.querySelector("#narration");
+        const slider = document.querySelector("#seek");
+        const {fps} = globalThis.MATHSCENE_LESSON.canvas;
+        return !audio.paused && audio.currentTime > start && Math.abs(slider.value / fps - audio.currentTime) < .15;
+      }, position);
+      await offline.locator("#play").click();
+      if (!await offline.locator("#narration").evaluate(audio => audio.paused)) throw Error("narration pause failed");
+      report.offlineNarration = true;
+    }
     report.offlineFile = true;
     report.overlapWarnings = [...new Set(report.overlapWarnings)];
     await writeFile(join(work, "browser.json"), JSON.stringify(report, null, 2));
@@ -377,6 +406,7 @@ async function verify(web, work, preview) {
 
 try {
   if (command === "pace") await pace(...args);
+  else if (command === "speech-plan") await speechPlan(...args);
   else if (command === "prepare") await prepare(...args);
   else if (command === "capture") await capture(...args);
   else if (command === "verify") await verify(...args);

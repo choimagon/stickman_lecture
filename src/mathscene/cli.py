@@ -13,6 +13,8 @@ from fractions import Fraction
 from pathlib import Path
 
 from .audio import bubble_cues, visual_cues, write_effect_track
+from .narration import (NarrationError, VOICE_NAMES, check_voice, download_voice,
+                        narration_minimums, synthesize_spans, write_narration)
 from .scene import RESOURCES, SceneError, load_scene
 from .video_player import write_video_player
 
@@ -62,15 +64,18 @@ def bridge(stage, node, home, work, *args):
     run(stage, [node, str(RESOURCES / "bridge.mjs"), str(stage), str(home), *map(str, args)], work)
 
 
-def build_web(lesson, node, home, work):
+def build_web(lesson, node, home, work, narration=None):
     web = work / "web"
     web.mkdir()
     sources = RESOURCES / "web"
     for name in ("index.html", "style.css", "core.js", "stick-scene.js", "stick-scene.LICENSE.txt", "stick.js", "player.js"):
         shutil.copyfile(sources / name, web / name)
     serialized = json.dumps(lesson, ensure_ascii=True, allow_nan=False)
-    (web / "scene-data.js").write_text("globalThis.MATHSCENE_LESSON = JSON.parse(" +
-                                      json.dumps(serialized) + ");\n", encoding="utf-8")
+    script = "globalThis.MATHSCENE_LESSON = JSON.parse(" + json.dumps(serialized) + ");\n"
+    if narration:
+        shutil.copyfile(narration, web / "narration.wav")
+        script += "globalThis.MATHSCENE_NARRATION = true;\n"
+    (web / "scene-data.js").write_text(script, encoding="utf-8")
     package = home / "node_modules" / "katex"
     katex = package / "dist"
     vendor = web / "vendor"
@@ -82,7 +87,7 @@ def build_web(lesson, node, home, work):
     screenshots = work / "web-frames"
     screenshots.mkdir()
     bridge("verify", node, home, work, web, screenshots, work / "web-preview.png")
-    return json.loads((screenshots / "browser.json").read_text())
+    return {**json.loads((screenshots / "browser.json").read_text()), "hasNarration": bool(narration)}
 
 
 def probe(ffprobe, video):
@@ -127,7 +132,7 @@ def write_srt(segments, fps, path):
     path.write_text("\n\n".join(entries) + "\n", encoding="utf-8")
 
 
-def build_video(lesson, scene_file, node, home, work, preview, audio, bubble_sound, visual_sound):
+def build_video(lesson, scene_file, node, home, work, preview, audio, bubble_sound, visual_sound, narration=None):
     if importlib.util.find_spec("manim") is None:
         raise RenderError("ManimCE is missing. Install the mathscene[video] extra.")
     ffmpeg, ffprobe = executable("ffmpeg"), executable("ffprobe")
@@ -155,27 +160,35 @@ def build_video(lesson, scene_file, node, home, work, preview, audio, bubble_sou
     lesson_video = work / "lesson.mp4"
     command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", str(math_video), "-i", str(stick_video)]
     filters = "[0:v][1:v]overlay=shortest=1:format=auto,format=yuv420p[v]"
+    sound = []
+    if narration:
+        sound.append((narration, 1))
     if audio:
-        command += ["-i", str(audio)]
+        sound.append((audio, .30 if narration else 1))
     if cues:
         effects = work / "effects.wav"
         write_effect_track(effects, cues, frames, fps)
-        command += ["-i", str(effects)]
-        if audio:
-            filters += (";[2:a:0]apad[base];[3:a:0]volume=0.5[effects];"
-                        "[base][effects]amix=inputs=2:duration=first:normalize=0,"
-                        "alimiter=limit=0.95:level=0:latency=1[a]")
+        sound.append((effects, .34 if narration else .5 if audio else 1))
+    for source, _gain in sound:
+        command += ["-i", str(source)]
+    if len(sound) > 1:
+        parts = []
+        for i, (_source, gain) in enumerate(sound):
+            filters += f";[{i + 2}:a:0]volume={gain}[sound{i}]"
+            parts.append(f"[sound{i}]")
+        filters += (";" + "".join(parts) + f"amix=inputs={len(sound)}:duration=longest:normalize=0,"
+                    "alimiter=limit=0.95:level=0:latency=1,apad[a]")
     command += ["-filter_complex", filters, "-map", "[v]", "-frames:v", str(frames),
                 "-c:v", "libx264", "-preset", "fast",
                 "-crf", "19", "-movflags", "+faststart"]
-    if audio or cues:
-        command += ["-map", "[a]" if audio and cues else "2:a:0"]
-        if audio and not cues:
+    if sound:
+        command += ["-map", "[a]" if len(sound) > 1 else "2:a:0"]
+        if len(sound) == 1:
             command += ["-af", "apad"]
         command += ["-t", f"{frames / fps:.9f}", "-c:a", "aac"]
     run("composite", [*command, str(lesson_video)], work)
     report = verify_video(ffprobe, lesson_video, width, height, fps, frames)
-    if report["hasAudio"] != bool(audio or cues):
+    if report["hasAudio"] != bool(sound):
         raise RenderError("Unexpected audio track in the lesson")
     run("decode", [ffmpeg, "-v", "error", "-xerror", "-i", str(lesson_video), "-f", "null", "-"], work)
     reel = work / "video-frames"
@@ -193,7 +206,7 @@ def build_video(lesson, scene_file, node, home, work, preview, audio, bubble_sou
     tracked_frames = sum(part["frames"] for part in segments if part["tracked"])
     return {**report, "overlay": alpha, "motion": json.loads((work / "motion.json").read_text()),
             "bubbleSoundCues": len(bubbles), "visualSoundCues": len(visuals), "drawFrames": animated_frames,
-            "trackedFrames": tracked_frames,
+            "trackedFrames": tracked_frames, "hasNarration": bool(narration),
             "decoded": True, "screenshots": len(lesson["scenes"]), "htmlPlayer": "player.html"}
 
 
@@ -247,10 +260,21 @@ def render(args):
     try:
         node = executable("node")
         home = node_home(scene_path.parent)
-        if "video" in wanted and not args.fixed_timing:
+        narration = None
+        minimums = []
+        if args.narration:
+            speech_plan = work / "speech-plan.json"
+            bridge("speech-plan", node, home, work, prepared, speech_plan)
+            spans = json.loads(speech_plan.read_text(encoding="utf-8"))
+            print(f"Synthesizing offline narration ({args.voice})", flush=True)
+            clips, sample_rate = synthesize_spans(spans, lesson["locale"], args.voice)
+            length_file = work / "speech-minimums.json"
+            json_file(length_file, narration_minimums(clips, sample_rate))
+            minimums = [length_file]
+        if ("video" in wanted or args.narration) and not args.fixed_timing:
             source_duration = lesson["duration"]
             adjusted = work / "paced.json"
-            bridge("pace", node, home, work, prepared, adjusted)
+            bridge("pace", node, home, work, prepared, adjusted, *minimums)
             candidate, _ = load_scene(adjusted)
             if candidate != lesson:
                 paced = True
@@ -259,20 +283,29 @@ def render(args):
             report["pacing"] = {"sourceDuration": source_duration, "duration": lesson["duration"], "changed": paced}
             report["timeline"] = [{"id": s["id"], "start": s["start"], "duration": s["duration"]}
                                   for s in lesson["scenes"]]
+        if args.narration:
+            if paced:
+                bridge("speech-plan", node, home, work, prepared, speech_plan)
+                spans = json.loads(speech_plan.read_text(encoding="utf-8"))
+            narration = work / "narration.wav"
+            fps = lesson["canvas"]["fps"]
+            write_narration(narration, spans, clips, round(lesson["duration"] * fps), fps, sample_rate)
+            report["narration"] = {"voice": args.voice, "cues": len(spans), "sampleRate": sample_rate}
         for medium in wanted:
             stage = work / medium
             stage.mkdir()
             print(f"Rendering {medium}: {lesson['title']}", flush=True)
             try:
                 if medium == "web":
-                    detail = build_web(lesson, node, home, stage)
+                    detail = build_web(lesson, node, home, stage, narration)
                     publish(stage / "web", out / "web", work)
                     shutil.copyfile(stage / "web-preview.png", out / "web-preview.png")
                     if mode == "web":
                         shutil.copyfile(stage / "web-preview.png", out / "preview.png")
                 else:
                     detail = build_video(lesson, prepared, node, home, stage, args.preview, args.audio,
-                                         not (args.no_effects or args.no_bubble_sound), not args.no_effects)
+                                         not (args.no_effects or args.no_bubble_sound), not args.no_effects,
+                                         narration)
                     for name in ("lesson.mp4", "captions.srt", "player.html"):
                         publish(stage / name, out / name, work)
                     shutil.copyfile(stage / "video-preview.png", out / "preview.png")
@@ -281,7 +314,7 @@ def render(args):
                 report["exports"][medium] = {"ok": False, "error": str(exc)}
                 print(exc, file=sys.stderr)
         report["ok"] = all(r["ok"] for r in report["exports"].values())
-    except (RenderError, SceneError) as exc:
+    except (RenderError, SceneError, NarrationError) as exc:
         report["error"] = str(exc)
         print(exc, file=sys.stderr)
     finally:
@@ -321,14 +354,27 @@ def doctor(args):
             status["videoFont"] = choose_font()
         except (ImportError, OSError, RuntimeError) as exc:
             status["manimError"] = str(exc)
-    print(json.dumps(status, indent=2, ensure_ascii=False))
+    if args.narration:
+        try:
+            _engine, directory = check_voice("F3")
+            status["voiceModel"] = str(directory)
+        except NarrationError as exc:
+            status["voiceError"] = str(exc)
     required = ["node", "browser"] + (["ffmpeg", "ffprobe", "manim", "videoFont"] if args.video else [])
+    if args.narration:
+        required.append("voiceModel")
+    print(json.dumps(status, indent=2, ensure_ascii=False))
     return int(not all(status.get(k) for k in required))
 
 
 def validate(args):
     lesson, checks = load_scene(args.scene)
     print(json.dumps({"ok": True, "scenes": len(lesson["scenes"]), "math": checks}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def voice_setup(_args):
+    print(f"Offline voice model: {download_voice()}")
     return 0
 
 
@@ -367,6 +413,8 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     diagnostic = commands.add_parser("doctor", help="check Node, Chromium and optional video dependencies")
     diagnostic.add_argument("--video", action="store_true", help="require video dependencies")
+    diagnostic.add_argument("--narration", action="store_true", help="check the offline speech model")
+    commands.add_parser("voice-setup", help="download the pinned offline speech model")
     validation = commands.add_parser("validate", help="verify schema, timeline and math assertions")
     validation.add_argument("scene", type=Path)
     navigation = commands.add_parser("player", help="create a chapter player for an already rendered MP4")
@@ -377,6 +425,8 @@ def main(argv=None):
     rendering.add_argument("--mode", default="video", choices=["video", "web", "both"])
     rendering.add_argument("--preview", action="store_true", help="halve the video resolution while retaining the frame rate")
     rendering.add_argument("--audio", type=Path, help="optional local audio file to mix into video")
+    rendering.add_argument("--narration", action="store_true", help="read the speech bubbles aloud")
+    rendering.add_argument("--voice", default="F3", choices=VOICE_NAMES, help="preset voice for narration")
     rendering.add_argument("--no-bubble-sound", action="store_true", help="omit the sound at speech bubble changes")
     rendering.add_argument("--no-effects", action="store_true", help="omit all generated sound effects")
     rendering.add_argument("--fixed-timing", action="store_true", help="use the original scene times")
@@ -386,8 +436,9 @@ def main(argv=None):
             parser.error("--audio requires video output and a local audio file")
         args.audio = args.audio.resolve()
     try:
-        return {"doctor": doctor, "validate": validate, "render": render, "player": player}[args.command](args)
-    except (SceneError, RenderError, OSError) as exc:
+        return {"doctor": doctor, "validate": validate, "render": render, "player": player,
+                "voice-setup": voice_setup}[args.command](args)
+    except (SceneError, RenderError, NarrationError, OSError) as exc:
         print(f"stickman-lecture: {exc}", file=sys.stderr)
         return 1
 

@@ -11,23 +11,48 @@ function readingFrames(bubbles, fps) {
   return letters ? Math.ceil(Math.max(1.6, .85 + .145 * letters) * fps) : 0;
 }
 
-export function paceLesson(lesson) {
+function sceneSpeech(lesson, scene) {
+  const {fps} = lesson.canvas;
+  const speakers = new Set(scene.layers.filter(layer => layer.type === "stick").map(layer => layer.id));
+  const candidates = [0, ...scene.events.filter(event => speakers.has(event.target) &&
+    ["show", "hide", "speak"].includes(event.action)).map(event => Math.round(event.at * fps))];
+  let preceding;
+  return [...new Set(candidates)].flatMap(at => {
+    const bubbles = visibleBubbles(MathScene.state(lesson, scene.start + at / fps));
+    const key = JSON.stringify(bubbles);
+    if (key === preceding) return [];
+    preceding = key;
+    return [{at, bubbles, text: Object.values(bubbles).join(" ").trim()}];
+  });
+}
+
+export function speechSpans(lesson) {
+  const {fps} = lesson.canvas;
+  const spans = [];
+  for (const scene of lesson.scenes) {
+    const from = Math.round(scene.start * fps);
+    const points = sceneSpeech(lesson, scene);
+    points.forEach(({at, text}, i) => {
+      if (!text) return;
+      const to = from + (points[i + 1]?.at ?? Math.round(scene.duration * fps));
+      const previous = spans.at(-1);
+      if (previous && previous.end === from + at && previous.text === text) previous.end = to;
+      else spans.push({start: from + at, end: to, text});
+    });
+  }
+  return spans;
+}
+
+export function paceLesson(lesson, minimums = {}) {
   const {fps} = lesson.canvas;
   const frame = seconds => Math.round(seconds * fps);
   let lessonEnd = 0;
   const scenes = lesson.scenes.map(scene => {
     const end = frame(scene.duration);
-    const speakers = new Set(scene.layers.filter(layer => layer.type === "stick").map(layer => layer.id));
-    const candidateFrames = [0, ...scene.events.filter(event => speakers.has(event.target) &&
-      ["show", "hide", "speak"].includes(event.action)).map(event => frame(event.at))];
-    let preceding;
-    const speechFrames = [...new Set(candidateFrames)].flatMap(at => {
-      const bubbles = visibleBubbles(MathScene.state(lesson, scene.start + at / fps));
-      const key = JSON.stringify(bubbles);
-      if (key === preceding) return [];
-      preceding = key;
-      return [{at, reading: readingFrames(bubbles, fps)}];
-    });
+    const speechFrames = sceneSpeech(lesson, scene).map(({at, bubbles, text}) => ({
+      at, reading: Math.max(readingFrames(bubbles, fps),
+        Object.hasOwn(minimums, text) ? Math.ceil(minimums[text] * fps) : 0),
+    }));
     const visualEnds = scene.events.filter(event => event.action !== "speak").map(event => {
       const at = frame(event.at);
       const duration = event.action === "draw" ? frame(event.duration) :

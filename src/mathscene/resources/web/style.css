@@ -24,7 +24,8 @@ button:disabled { opacity: .4; cursor: default; }
 #play { background: #72dfca; color: #111c31; border-color: #72dfca; min-width: 77px; }
 #prev,#next { min-width: 33px; font-size: 22px; }
 input[type="range"] { min-width: 0; accent-color: #72dfca; }
-#seek { flex: 1; }
+#seek { flex: 1; min-width: 0; }
+[hidden] { display: none !important; }
 #clock { font: 12px ui-monospace,monospace; white-space: nowrap; color: #a4b2cc; }
 .speech { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .speech:empty { display: none; }

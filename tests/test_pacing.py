@@ -33,12 +33,15 @@ def test_pacing_matches_bubble_length_without_clipping_a_crossing_draw():
     module = (RESOURCES / "pacing.mjs").as_uri()
     script = """
       import {readFileSync} from "node:fs";
-      const {paceLesson} = await import(process.argv[1]);
-      console.log(JSON.stringify(paceLesson(JSON.parse(readFileSync(0, "utf8")))));
+      const {paceLesson, speechSpans} = await import(process.argv[1]);
+      const lesson = JSON.parse(readFileSync(0, "utf8"));
+      const withVoice = paceLesson(lesson, {"다음.": 6});
+      console.log(JSON.stringify({adjusted: paceLesson(lesson), withVoice, spans: speechSpans(withVoice)}));
     """
     result = subprocess.run(["node", "--input-type=module", "-e", script, module],
-                            input=json.dumps(lesson), capture_output=True, text=True, check=True)
-    adjusted = json.loads(result.stdout)
+                            input=json.dumps(lesson), capture_output=True, encoding="utf-8", check=True)
+    output = json.loads(result.stdout)
+    adjusted = output["adjusted"]
     verify_scene(adjusted)
     first, second = adjusted["scenes"]
     change_time = first["events"][1]["at"]
@@ -47,3 +50,8 @@ def test_pacing_matches_bubble_length_without_clipping_a_crossing_draw():
     assert second["start"] == first["duration"]
     assert second["events"][1]["at"] == 4
     assert second["events"][0]["duration"] == 3 and second["duration"] > 6
+    with_voice = output["withVoice"]
+    verify_scene(with_voice)
+    assert with_voice["scenes"][0]["events"][0]["duration"] == 1
+    assert with_voice["scenes"][0]["events"][1]["at"] == 6
+    assert output["spans"][0] == {"start": 0, "end": 180, "text": "다음."}
