@@ -92,9 +92,9 @@ class MathLayer(Scene):
         return line
 
     def header(self, index):
-        title = self.place(self.text(self.lesson["scenes"][index]["title"], .0318 * self.w,
+        title = self.place(self.text(self.lesson["scenes"][index]["title"], .0159 * self.w,
                                      self.palette["white"]), .033 * self.w, .086 * self.h, "left")
-        step = self.place(self.text(f"{index + 1} / {len(self.lesson['scenes'])}", .0145 * self.w,
+        step = self.place(self.text(f"{index + 1} / {len(self.lesson['scenes'])}", .00725 * self.w,
                                     self.palette["teal"]), .967 * self.w, .086 * self.h, "right")
         divider = Line(self.point(.0325 * self.w, .1565 * self.h),
                        self.point(.9675 * self.w, .1565 * self.h), color=self.palette["grid"], stroke_width=1)
@@ -102,11 +102,30 @@ class MathLayer(Scene):
             raise ValueError(f"scene {index + 1}: title overlaps counter or divider")
         return [title, step, divider]
 
+    def get_moving_and_static_mobjects(self, animations):
+        # Cairo otherwise keeps the original children of a moving group in its
+        # list. Keep the groups intact to draw only the current frame's children.
+        return list(self.mobjects), []
+
     def construct(self):
         fps = self.lesson["canvas"]["fps"]
         max_x, max_y = self.w * self.unit / 2, 4
         previous = None
         rendered = {}
+
+        def checked(source):
+            key = json.dumps(source, sort_keys=True)
+            if key not in rendered:
+                item = self.layer(source)
+                left, right, bottom, top = (item.get_left()[0], item.get_right()[0],
+                                             item.get_bottom()[1], item.get_top()[1])
+                if left < -max_x or right > max_x or bottom < -max_y or top > max_y:
+                    raise ValueError(f"{self.lesson['scenes'][index]['id']}/{source['id']} outside video frame")
+                if len(rendered) >= 1200:
+                    rendered.clear()
+                rendered[key] = item
+            return rendered[key]
+
         for segment in self.segments:
             index = segment["scene"]
             if index != previous:
@@ -117,29 +136,20 @@ class MathLayer(Scene):
             layers = VGroup()
             animated = []
             for layer in segment["layers"]:
-                item = rendered.get(layer["id"])
-                if item is None:
-                    item = self.layer(layer)
-                    bounds = (item.get_left()[0], item.get_right()[0],
-                              item.get_bottom()[1], item.get_top()[1])
-                    left, right, bottom, top = bounds
-                    if left < -max_x or right > max_x or bottom < -max_y or top > max_y:
-                        raise ValueError(f"{self.lesson['scenes'][index]['id']}/{layer['id']} outside video frame")
-                    rendered[layer["id"]] = item
-                if "drawFrames" in layer:
+                if "animationFrames" in layer:
                     path = VGroup()
-                    animated.append((path, layer, layer["drawFrames"]))
+                    animated.append((path, layer["animationFrames"]))
                     layers.add(path)
                 else:
-                    layers.add(item)
+                    layers.add(checked(layer))
             self.add(layers)
             frames = segment["frames"]
             if animated:
                 def update(_group, alpha):
                     frame = min(round(alpha * frames), frames - 1)
-                    for path, layer, snapshots in animated:
+                    for path, snapshots in animated:
                         sample = snapshots[frame]
-                        path.submobjects = [] if sample is None else [self.layer({**layer, **sample})]
+                        path.submobjects = [] if sample is None else [checked(sample)]
 
                 # Cairo samples an exclusive end time. Keep exactly the authored frame count.
                 self.play(UpdateFromAlphaFunc(layers, update, rate_func=linear,

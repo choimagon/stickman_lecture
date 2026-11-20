@@ -4,7 +4,7 @@
 
 | 저장소 | 조사한 커밋 | 라이선스와 결정 |
 | --- | --- | --- |
-| [nilbuild/stick-scene](https://github.com/nilbuild/stick-scene) | `ca84311177a020c2dff7dfd9cb2e7b786288c1ab` | MIT. 런타임과 검사 방식을 분석하고 별도의 결정적 Canvas 캐릭터를 작성한다. |
+| [nilbuild/stick-scene](https://github.com/nilbuild/stick-scene) | `ca84311177a020c2dff7dfd9cb2e7b786288c1ab` | MIT. 원본 캐릭터와 관절 렌더러를 그대로 포함한다. |
 | [adithya-s-k/manim_skill](https://github.com/adithya-s-k/manim_skill) | `cef045011722d285692e3381d12d4d637da56e18` | 저장소 및 CE 자료는 MIT. ManimGL 하위 자료는 별도 CC BY-NC-SA 4.0. CE만 사용하며 GL 코드는 가져오지 않는다. |
 | [subinium/3b1b-style-animation-skill](https://github.com/subinium/3b1b-style-animation-skill) | `a47d18084300b3605512aa956236444f7e52bcba` | MIT. 교육 원칙을 참고하고 로고와 고유 에셋은 사용하지 않는다. |
 
@@ -18,7 +18,7 @@
 
 `scripts/frames.mjs`는 `--scene`, 반복 가능한 `--src`, `--frames`의 `idle:초`, `s:초`, `u:비율`, 출력 크기와 파일 옵션을 받는 Playwright 접촉 시트 도구다. `scripts/motion.mjs`는 60fps 샘플에서 관절 점프, 팔과 얼굴 교차, 머리 가림, 팔꿈치 방향, 발 미끄러짐, 손 닿기와 시작 및 종료 불연속 등을 검사한다. 원본 런타임의 특정 문자열을 계측 삽입 지점으로 찾으므로 런타임 변경에 취약하고 자체 캐릭터에 그대로 적용할 수 없다.
 
-채택 결정은 시간에 따라 동일한 프레임을 그리는 독립 Canvas 구현이다. 이는 원본의 전역 DOM 뷰와 자체 씬의 시간 제어를 결합할 필요를 줄인다. 원본 검사기의 판정을 구현하지 않았다면 동등한 검사로 주장하지 않는다.
+화면에서는 원본 `RIG.fig`와 `RIG.legs`를 사용한다. 장면 엔진은 (x) 이동과 손 목표를 원본 리그에 전달하며, 렌더링한 손 좌표를 소품의 실제 접촉점과 대조한다. 원본의 웹 재생 요소와 별도로 공통 장면 시간표에서 포즈를 결정한다.
 
 화면 스타일은 원본 기본 장면을 일반 바닥과 지면으로 다시 렌더링해 비교했다. 원본이 사용하는 흰 배경, 화면 하단의 매우 옅은 회색 바닥, 가늘고 미세하게 흔들리는 검은 경계를 `stick-studio` 테마로 구현했다.
 
@@ -28,7 +28,7 @@
 
 CLI 자료의 `-ql`은 저품질 미리보기, `-qm`은 1280×720과 30fps 설정이다. 개별 해상도, fps, 출력 경로와 투명 형식은 설치된 CE 버전의 CLI 도움말 및 실제 결과를 기준으로 검증한다. 오류 코드를 확인하고 실패 로그와 중간 파일을 남긴다. 고정 시간 재생은 프레임 수와 fps를 실제 출력에서 확인해야 한다.
 
-`skills/manimgl-best-practices/`는 `manimlib` 및 `manimgl`을 쓰는 다른 엔진이다. 동일 API로 취급하거나 예제를 CE에 붙이지 않는다. 영상은 CE의 수학 레이어와 자체 Canvas 캐릭터를 FFmpeg로 합성한다. 브라우저는 Python Manim을 실행하지 않고 KaTeX와 브라우저 그래픽을 쓴다. 양쪽의 의미와 시간을 공통 JSON으로 전달하며 화소 단위 동일성을 가정하지 않는다.
+`skills/manimgl-best-practices/`는 `manimlib` 및 `manimgl`을 쓰는 다른 엔진이다. 동일 API로 취급하거나 예제를 CE에 붙이지 않는다. 영상은 CE의 수학 레이어와 원본 Stick Scene 캐릭터가 그려진 Canvas를 FFmpeg로 합성한다. 브라우저는 KaTeX와 브라우저 그래픽을 쓴다. 양쪽의 의미와 시간을 공통 JSON으로 전달하며 화소 단위 동일성을 가정하지 않는다.
 
 ## 교육 설계 자료
 

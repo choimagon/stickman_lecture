@@ -6,11 +6,35 @@ import {readFile, writeFile} from "node:fs/promises";
 import {dirname, extname, join, resolve, sep} from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
 import "./web/core.js";
+import {paceLesson, visibleBubbles} from "./pacing.mjs";
 
 const [command, dependencyDir, ...args] = process.argv.slice(2);
 const require = createRequire(join(dependencyDir, "package.json"));
 const resources = dirname(fileURLToPath(import.meta.url));
-const {paletteFor, state, geometry, speech} = MathScene;
+const {paletteFor, state, geometry, speech, dependsOn} = MathScene;
+
+const drawSound = {
+  line: "graph", polyline: "graph", gaussian: "graph", vector: "arrow",
+  circle: "shape", ellipse: "shape", rect: "shape", polygon: "shape",
+};
+const showSound = {circle: "point", rect: "shape", ellipse: "shape",
+  polygon: "shape", gaussian: "graph", polyline: "graph", vector: "arrow", formula: "formula"};
+
+function visualEffects(scene, current, previousIds, point, fps) {
+  const visible = new Map(current.layers.map(layer => [layer.id, layer.type]));
+  return scene.events.filter(event => Math.round(event.at * fps) === point && visible.has(event.target))
+    .map(event => {
+      const type = visible.get(event.target);
+      if (event.action === "draw") return drawSound[type];
+      if (event.action === "show" && !previousIds.has(event.target)) return showSound[type];
+      return null;
+    }).filter(Boolean);
+}
+
+async function pace(sceneFile, dest) {
+  const lesson = JSON.parse(await readFile(sceneFile, "utf8"));
+  await writeFile(dest, JSON.stringify(paceLesson(lesson)));
+}
 
 async function prepare(sceneFile, work) {
   const {mathjax} = require("mathjax-full/js/mathjax.js");
@@ -26,45 +50,58 @@ async function prepare(sceneFile, work) {
   const lesson = JSON.parse(await readFile(sceneFile, "utf8"));
   const {fps} = lesson.canvas;
   const formulas = new Map();
+  async function compile(source, complete = false) {
+    const resolved = geometry(source, {complete});
+    if (!resolved) return null;
+    const {bind, progress, ...layer} = resolved;
+    if (layer.type !== "formula") return layer;
+    if (!formulas.has(layer.tex)) {
+      const name = "formula-" + formulas.size + ".svg";
+      const node = adaptor.firstChild(mj.convert(layer.tex, {display: false}));
+      const svg = adaptor.outerHTML(node).replaceAll("currentColor", "#ffffff");
+      await writeFile(join(work, name), svg);
+      const view = adaptor.getAttribute(node, "viewBox").split(/ +/).map(Number);
+      if (view.length !== 4 || !view.every(Number.isFinite)) throw Error("bad formula dimensions: " + layer.id);
+      formulas.set(layer.tex, {file: name, heightEm: view[3] / 1000});
+    }
+    return {...layer, ...formulas.get(layer.tex)};
+  }
   const segments = [];
   for (const scene of lesson.scenes) {
+    let previousIds = new Set();
+    const tracks = scene.tracks ?? [];
+    const keys = tracks.flatMap(track => track.keyframes.map(key => Math.round(key.at * fps)));
     const ends = scene.events.filter(e => e.action === "draw").map(e => Math.round((e.at + e.duration) * fps));
     const points = [...new Set([0, ...scene.events.map(e => Math.round(e.at * fps)),
-      ...ends, Math.round(scene.duration * fps)])].sort((a, b) => a - b);
+      ...ends, ...keys, Math.round(scene.duration * fps)])].sort((a, b) => a - b);
     for (let i = 0; i < points.length - 1; i++) {
-      const current = state(lesson, scene.start + points[i] / fps);
+      const at = delta => state(lesson, scene.start + (points[i] + delta) / fps);
+      const current = at(0);
       const {index, layers} = current;
       const frames = points[i + 1] - points[i];
+      const last = tracks.length ? at(frames - 1).values : current.values;
+      const changing = new Set(tracks.filter(track => current.values[track.id] !== last[track.id]).map(track => track.id));
+      const isDrawing = source => source.progress !== undefined && source.progress < 1 - 1e-7;
+      const mathLayers = layers.filter(layer => layer.type !== "stick");
+      const animated = new Set(mathLayers.filter(source =>
+        isDrawing(source) || Object.values(source.bind ?? {}).some(expr => dependsOn(expr, changing)))
+        .map(layer => layer.id));
+      const snapshots = animated.size ? Array.from({length: frames}, (_, frame) =>
+        new Map(at(frame).layers.filter(layer => animated.has(layer.id)).map(layer => [layer.id, layer]))) : [];
       const math = [];
-      for (const source of layers) {
-        if (source.type === "stick") continue;
-        const layer = {...geometry(source, {complete: true})};
-        if (source.progress !== undefined && source.progress < 1 - 1e-7) {
-          const draw = scene.events.find(e => e.action === "draw" && e.target === layer.id);
-          const runFrames = Math.round(draw.duration * fps);
-          layer.drawFrames = Array.from({length: frames}, (_, frame) => {
-            const snapshot = geometry({...source, progress: source.progress + frame / runFrames});
-            if (!snapshot) return null;
-            if (snapshot.points) return {type: snapshot.type, points: snapshot.points};
-            return {x2: snapshot.x2, y2: snapshot.y2, arrow: snapshot.arrow};
-          });
-        }
-        if (layer.type === "formula") {
-          if (!formulas.has(layer.tex)) {
-            const name = "formula-" + formulas.size + ".svg";
-            const node = adaptor.firstChild(mj.convert(layer.tex, {display: false}));
-            const svg = adaptor.outerHTML(node).replaceAll("currentColor", "#ffffff");
-            await writeFile(join(work, name), svg);
-            const view = adaptor.getAttribute(node, "viewBox").split(/ +/).map(Number);
-            if (view.length !== 4 || !view.every(Number.isFinite)) throw Error("bad formula dimensions: " + layer.id);
-            formulas.set(layer.tex, {file: name, heightEm: view[3] / 1000});
-          }
-          Object.assign(layer, formulas.get(layer.tex));
+      for (const source of mathLayers) {
+        const layer = await compile(source, true);
+        if (animated.has(source.id)) {
+          layer.animationFrames = [];
+          for (const snapshot of snapshots) layer.animationFrames.push(await compile(snapshot.get(source.id)));
         }
         math.push(layer);
       }
       const spoken = scene.layers.some(layer => layer.type === "stick") ? speech(current) : scene.narration;
-      segments.push({scene: index, frames, speech: spoken, layers: math});
+      const sounds = visualEffects(scene, current, previousIds, points[i], fps);
+      segments.push({scene: index, frames, speech: spoken, bubbleSpeech: visibleBubbles(current),
+        visualEffects: sounds, drawing: mathLayers.some(isDrawing), tracked: changing.size > 0, layers: math});
+      previousIds = new Set(layers.map(layer => layer.id));
     }
   }
   await writeFile(join(work, "segments.json"), JSON.stringify({lesson, palette: paletteFor(lesson.theme), segments}));
@@ -88,6 +125,11 @@ function checkMotion(report, lesson, index, overlay, previous, fps) {
         figure.bubble.top < height * .162 || figure.bubble.bottom > height - 4)) {
       throw Error("speech bubble outside safe stage in " + index + "/" + figure.id);
     }
+    if (figure.contact !== null) {
+      report.contactSamples = (report.contactSamples ?? 0) + 1;
+      report.maxContactError = Math.max(report.maxContactError ?? 0, figure.contact);
+      if (figure.contact > 3.5) throw Error("hand missed prop in " + index + "/" + figure.id);
+    }
     const before = previous?.index === index && previous.overlay.figures.find(f => f.id === figure.id);
     if (before) {
       const shift = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
@@ -95,7 +137,8 @@ function checkMotion(report, lesson, index, overlay, previous, fps) {
       const feet = Math.max(...figure.feet.map((p, i) => shift(p, before.feet[i])));
       report.maxJointPixelsPerFrame = Math.max(report.maxJointPixelsPerFrame, joints);
       report.maxFootPixelsPerFrame = Math.max(report.maxFootPixelsPerFrame, feet);
-      if (joints > 1600 / fps || feet > 75 / fps) {
+      const footLimit = figure.walking || before.walking ? 350 / fps : 75 / fps;
+      if (joints > 1600 / fps || feet > footLimit) {
         throw Error("abrupt joint motion or foot sliding in " + index + "/" + figure.id);
       }
     }
@@ -107,7 +150,8 @@ async function capture(sceneFile, work, w, h, ffmpeg) {
   const {fps} = lesson.canvas;
   const count = Math.round(lesson.duration * fps);
   const browser = await launch();
-  const report = {frames: count, maxJointPixelsPerFrame: 0, maxFootPixelsPerFrame: 0, speechFrames: 0};
+  const report = {frames: count, maxJointPixelsPerFrame: 0, maxFootPixelsPerFrame: 0, speechFrames: 0,
+    contactSamples: 0, maxContactError: 0, walkingFrames: 0};
   let encoder;
   let encoderResult;
   try {
@@ -138,6 +182,7 @@ async function capture(sceneFile, work, w, h, ffmpeg) {
       for (const frame of batch) {
         checkMotion(report, lesson, frame.index, frame.overlay, previous, fps);
         if (frame.overlay.figures.some(figure => figure.bubble)) report.speechFrames++;
+        if (frame.overlay.figures.some(figure => figure.walking)) report.walkingFrames++;
         previous = {index: frame.index, overlay: frame.overlay};
         if (encoder.stdin.destroyed) throw Error("overlay encoder closed before all frames arrived");
         if (!encoder.stdin.write(Buffer.from(frame.png, "base64"))) {
@@ -187,7 +232,8 @@ async function serve(root) {
 async function verify(web, work, preview) {
   const {server, url} = await serve(resolve(web));
   let browser;
-  const report = {viewports: [], samples: 0, controls: 0, drawChecks: 0, speechChecks: 0, overlapWarnings: []};
+  const report = {viewports: [], samples: 0, controls: 0, drawChecks: 0, speechChecks: 0,
+    contactSamples: 0, maxContactError: 0, overlapWarnings: []};
   try {
     browser = await launch();
     for (const viewport of [{width: 1440, height: 920}, {width: 390, height: 844}]) {
@@ -209,7 +255,11 @@ async function verify(web, work, preview) {
         const draws = scene.events.filter(e => e.action === "draw");
         const drawTimes = draws.flatMap(e =>
           [e.at + e.duration / 2, Math.min(e.at + e.duration, lastFrame)]);
-        const times = [0, ...scene.events.map(e => e.at), ...drawTimes, lastFrame].sort((a, b) => a - b);
+        const trackTimes = (scene.tracks ?? []).flatMap(track => track.keyframes.flatMap((key, i) => {
+          const next = track.keyframes[i + 1];
+          return next && next.value !== key.value ? [(key.at + next.at) / 2] : [];
+        }));
+        const times = [0, ...scene.events.map(e => e.at), ...drawTimes, ...trackTimes, lastFrame].sort((a, b) => a - b);
         for (const local of new Set(times)) {
           const measured = await page.evaluate(time => {
             mathscenePlayer.seek(time);
@@ -267,7 +317,7 @@ async function verify(web, work, preview) {
             if (text && !measured.spoken.includes(text)) throw Error("speech was not updated for " + scene.id + "/" + target);
             report.speechChecks++;
           }
-          checkMotion({maxJointPixelsPerFrame: 0, maxFootPixelsPerFrame: 0}, info, i, measured.overlay, null, info.canvas.fps);
+          checkMotion(report, info, i, measured.overlay, null, info.canvas.fps);
           report.overlapWarnings.push(...measured.overlaps.map(pair => scene.id + "/" + pair));
         }
         const sliders = page.locator("#sliders input");
@@ -326,7 +376,8 @@ async function verify(web, work, preview) {
 }
 
 try {
-  if (command === "prepare") await prepare(...args);
+  if (command === "pace") await pace(...args);
+  else if (command === "prepare") await prepare(...args);
   else if (command === "capture") await capture(...args);
   else if (command === "verify") await verify(...args);
   else if (command === "doctor") {

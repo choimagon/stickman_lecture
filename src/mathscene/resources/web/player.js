@@ -81,7 +81,7 @@
       label.textContent = control.label;
       const input = document.createElement("input");
       Object.assign(input, {type: "range", id, min: control.min, max: control.max, step: control.step,
-        value: values[control.id] ?? control.default});
+        value: current.values[control.id]});
       const output = document.createElement("output");
       output.htmlFor = id;
       output.value = input.value;
@@ -101,8 +101,14 @@
     element.dataset.layer = layer.id;
     element.dataset.type = layer.type;
     element.dataset.progress = motion.matches ? 1 : layer.progress ?? 1;
+    element.dataset.visual = visualKey(layer);
     if (!drawn) element.setAttribute("visibility", "hidden");
     return element;
+  }
+
+  function visualKey(layer) {
+    const progress = motion.matches ? 1 : layer.progress ?? 1;
+    return JSON.stringify([progress, ...Object.keys(layer.bind ?? {}).map(field => layer[field])]);
   }
 
   function render(forceMath = false) {
@@ -127,13 +133,20 @@
     if (forceMath || ui.math.dataset.key !== key) {
       ui.math.replaceChildren(...layers.map(mathElement));
       ui.math.dataset.key = key;
-    } else if (!motion.matches) {
+    } else {
       layers.forEach((layer, i) => {
         const element = ui.math.children[i];
-        if (layer.progress !== undefined && Number(element.dataset.progress) !== layer.progress) {
+        if (element.dataset.visual !== visualKey(layer)) {
           element.replaceWith(mathElement(layer));
         }
       });
+    }
+    const overrides = controls.get(scene.id);
+    for (const control of scene.interactions ?? []) {
+      if (Object.hasOwn(overrides, control.id)) continue;
+      const slider = byId("control-" + control.id);
+      slider.value = current.values[control.id];
+      slider.nextElementSibling.value = slider.value;
     }
     const spoken = speech(current);
     if (ui["stage-description"].textContent !== spoken) ui["stage-description"].textContent = spoken;
@@ -169,7 +182,9 @@
 
   document.documentElement.lang = lesson.locale;
   document.documentElement.dataset.theme = lesson.theme;
-  document.title = lesson.title + " · 스틱맨렉처";
+  const brand = /^ko(?:-|$)/i.test(lesson.locale) ? "졸라맨 강의" : "StickMan Lecture";
+  byId("brand").textContent = brand;
+  document.title = lesson.title + " · " + brand;
   ui.title.textContent = lesson.title;
   ui.stage.style.aspectRatio = width + " / " + height;
   ui.math.setAttribute("viewBox", [0, 0, width, height].join(" "));

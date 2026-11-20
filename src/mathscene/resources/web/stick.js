@@ -1,17 +1,12 @@
 (() => {
   const {paletteFor, font} = MathScene;
-  const armPoses = {
-    idle: [[-30, -72], [-32, -51], [30, -72], [32, -51]],
-    point_right: [[-31, -71], [-24, -51], [38, -103], [73, -116]],
-    explain: [[-38, -82], [-53, -100], [39, -83], [56, -100]],
-    wave: [[-28, -72], [-30, -52], [36, -103], [32, -137]],
+  const rig = window.RIG;
+  const poses = {
+    idle: rig.BASE,
+    point_right: rig.P({hF: [38, -97], head: [3, -116]}),
+    explain: rig.P({hF: [33, -88], hB: [-24, -87], hang: 0}),
+    wave: rig.BASE,
   };
-
-  function line(ctx, points) {
-    ctx.beginPath();
-    points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-    ctx.stroke();
-  }
 
   function wrap(ctx, text, width) {
     const rows = [];
@@ -34,45 +29,42 @@
     return rows;
   }
 
+  function actorPose(layer, time, scale) {
+    let pose = rig.BASE;
+    let mass = 0;
+    for (const [name, weight] of Object.entries(layer.weights)) {
+      if (!weight) continue;
+      mass += weight;
+      pose = rig.mix(pose, poses[name], weight / mass);
+    }
+    pose = rig.breathe(pose, time);
+    if (layer.walk) {
+      const {distance, speed} = layer.walk;
+      const phase = distance / (rig.STRIDE * 2 * scale);
+      pose = rig.legs(pose, phase, rig.clamp(Math.abs(speed) / 20, 0, 1), {arms: !layer.contact});
+    }
+    if (layer.contact) {
+      const {x, y, grip} = layer.contact;
+      pose = rig.shift(pose, 4 * grip, 0, ["head", "chest"]);
+      const hand = [(x - layer.x) / scale, (y - layer.y) / scale];
+      pose = rig.P({hF: rig.L2(pose.hF, hand, grip)}, pose);
+    }
+    return pose;
+  }
+
   function figure(ctx, layer, time, palette, speech) {
     const {x, y, scale = 1, weights, bubble} = layer;
-    const sway = Math.sin(time * 2.1) * 2;
-    const wave = Math.sin(time * 8) * 5 * (weights.wave ?? 0);
-    const arms = armPoses.idle.map((_, i) => Object.entries(weights).reduce(([px, py], [pose, weight]) => {
-      const [ax, ay] = armPoses[pose][i];
-      return [px + ax * weight, py + ay * weight];
-    }, [0, 0]));
-    arms[3][0] += wave;
-    const [el, hl, er, hr] = arms;
-    const anchors = [[-26, 0], [28, 0]];
+    const rigScale = scale * 1.25;
+    const pose = actorPose(layer, time, rigScale);
+    const drawing = rig.fig(ctx, pose, x, y, {s: rigScale,
+      wave: (weights.wave ?? 0) * (1 - (layer.contact?.grip ?? 0)), wt: time,
+      ink: palette.ground ? undefined : palette.white, far: palette.ground ? undefined : palette.muted});
+    const w = drawing.w;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
-    ctx.lineWidth = 5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = palette.figure ?? palette.blue;
-    ctx.fillStyle = palette.ground ?? palette.panel;
-    ctx.beginPath();
-    ctx.ellipse(0, 5, 57, 11, 0, 0, Math.PI * 2);
-    ctx.fill();
-    line(ctx, [[-37, 0], ...anchors, [39, 0]]);
-    ctx.strokeStyle = palette.figure ?? palette.white;
-    line(ctx, [[sway, -50], [-16, -25], anchors[0]]);
-    line(ctx, [[sway, -50], [17, -25], anchors[1]]);
-    line(ctx, [[sway, -116], [sway, -50]]);
-    ctx.lineWidth = 4.5;
-    line(ctx, [[sway, -96], el, hl]);
-    line(ctx, [[sway, -96], er, hr]);
-    ctx.beginPath();
-    ctx.arc(sway + 1, -136, 20, 0, Math.PI * 2);
-    ctx.fillStyle = palette.background;
-    ctx.fill();
-    ctx.stroke();
-    ctx.strokeStyle = palette.figure ?? palette.teal;
-    ctx.lineWidth = 3.5;
-    line(ctx, [[sway + 5, -137], [sway + 6, -137]]);
-    line(ctx, [[sway + 11, -130], [sway + 15, -132]]);
     let bubbleRect = null;
     if (speech && bubble) {
       ctx.font = "600 22px " + font;
@@ -105,20 +97,20 @@
       rows.forEach((row, i) => ctx.fillText(row, 0, by + 26 + i * 29));
     }
     ctx.restore();
-    const point = ([dx, dy]) => [x + dx * scale, y + dy * scale];
-    return {id: layer.id, joints: [[sway, -157], [sway, -96], ...arms, ...anchors].map(point),
-      feet: anchors.map(point), bubble: bubbleRect};
+    const contact = layer.contact?.grip >= .995 ?
+      Math.hypot(w.handF[0] - layer.contact.x, w.handF[1] - layer.contact.y) : null;
+    return {id: layer.id, joints: [w.head, w.sh, w.eB, w.handB, w.eF, w.handF, w.fF, w.fB],
+      feet: [w.fF, w.fB], bubble: bubbleRect, contact,
+      walking: Boolean(layer.walk && Math.abs(layer.walk.speed) > .1)};
   }
 
   function ground(ctx, {width, height}, palette) {
     const y = height * .894;
     ctx.fillStyle = palette.ground;
     ctx.fillRect(0, y, width, height - y);
-    ctx.strokeStyle = palette.figure;
-    ctx.lineWidth = 1.65;
     const points = Array.from({length: Math.ceil(width / 7) + 1},
       (_, i) => [Math.min(width, i * 7), y + .49 * Math.sin(i * .39) + .21 * Math.cos(i * 1.14)]);
-    line(ctx, points);
+    rig.strokePath(ctx, points, 1.4, palette.figure);
   }
 
   function draw(canvas, lesson, state, {speech = true, motion = true} = {}) {

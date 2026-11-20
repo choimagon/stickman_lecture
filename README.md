@@ -1,22 +1,20 @@
-# 스틱맨렉처
+# StickMan Lecture · 졸라맨 강의
 
-도형을 그리고 화살표로 연결하면서 개념이나 과정을 설명하는 Codex 스킬이다. 설명자는 각 요소가 등장하는 순간 말풍선으로 역할과 다음 단계를 알려 준다. 원본 Stick의 흰 종이, 옅은 바닥, 가는 지면선을 참고했다. 하나의 장면 파일로 MP4와 조작 가능한 HTML을 만들 수 있다.
+졸라맨 강의는 원본 Stick Scene 캐릭터가 소품을 움직이며 개념을 설명하는 Codex 스킬이다. 캐릭터가 수레를 밀면 관측점과 추정점이 함께 움직인다. 같은 장면 파일에서 MP4 영상과 직접 조작할 수 있는 HTML 강의를 만들 수 있다.
 
-## 영상 미리보기
-
-| 물의 순환 | MLP의 연결과 가중치 | 칼만 필터의 분포 갱신 |
-| --- | --- | --- |
-| ![구름과 지표가 그려지고 물이 하천을 거쳐 바다로 향한다](media/water-cycle.gif) | ![입력·은닉·출력층 사이의 화살표가 순서대로 그려진다](media/mlp-forward.gif) | ![예측, 관측 우도와 사후 분포의 곡선을 한 개씩 그린다](media/kalman-update.gif) |
-| [18초 MP4](media/water-cycle.mp4) | [26초 MP4](media/mlp-forward.mp4) | [12초 MP4](media/kalman-update.mp4) |
-
-Codex에서 `$stickman-lecture 물의 순환을 도형과 화살표로 자세히 설명하는 영상 만들어줘`처럼 요청한다. 원·타원·사각형·다각형은 윤곽부터 긋고, 화살표는 시작점에서 도착점으로 그린다. 선과 그래프도 경로를 따라 순차적으로 드러낼 수 있다. 평소에는 요소가 무엇인지, 왜 필요한지, 다음 요소와 어떻게 이어지는지 차례대로 설명한다. 짧은 버전이 필요하면 요청에 길이 또는 간단히라는 조건을 넣는다.
+| 그래프 그리기 · 칼만 필터의 분포 갱신 | 물체 조작 · 수레와 함께 움직이는 그래프 |
+| --- | --- |
+| ![예측, 관측 우도와 사후 분포의 곡선을 차례로 그린다](media/kalman-update.gif) | ![캐릭터가 수레를 밀며 관측점과 추정점의 움직임을 보여 준다](media/stick-interaction.gif) |
+| [22초 MP4](media/kalman-update.mp4) | [30.6초 MP4](media/stick-interaction.mp4) |
 
 ## 설치
 
-macOS에서는 프로젝트 루트에서 아래 명령을 실행한다. 프로젝트 가상 환경을 활성화한 채 Codex를 시작하면 `$stickman-lecture`을 호출할 수 있다.
+macOS에서 Python 3.11 이상과 Node.js 22.12 이상을 사용한다. 프로젝트의 가상 환경을 활성화한 상태에서 Codex를 시작하면 `$stickman-lecture`를 호출할 수 있다.
 
 ```bash
-brew install node ffmpeg cairo pango pkg-config
+git clone https://github.com/choimagon/stickman_lecture.git
+cd stickman_lecture
+brew install python node ffmpeg cairo pango pkg-config
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[video,test]'
@@ -26,39 +24,47 @@ stickman-lecture doctor --video
 ./scripts/install-skill.sh
 ```
 
-Ubuntu 계열 Linux에서는 Python 3.11 이상과 Node.js 22.12 이상을 준비하고 아래 패키지를 설치한다. 이후 같은 가상 환경 및 npm 명령을 사용한다. Chromium 시스템 라이브러리가 추가로 필요하면 npm 설치 뒤 `npx playwright install --with-deps chromium`을 실행한다.
+Ubuntu 계열 Linux에서는 Python 3.11 이상과 Node.js 22.12 이상을 준비하고 다음 패키지를 설치한 뒤 위의 가상 환경 및 npm 명령을 사용한다. Chromium 시스템 라이브러리가 추가로 필요하면 `npx playwright install --with-deps chromium`을 실행한다.
 
 ```bash
 sudo apt install python3-venv python3-dev build-essential pkg-config libcairo2-dev libpango1.0-dev ffmpeg fonts-noto-cjk
 ```
 
-웹 전용 설치는 `python -m pip install -e '.[test]'`과 `stickman-lecture doctor`를 사용한다. 두 모드의 검증에 Chromium을 사용한다. LaTeX 배포판은 필요 없다.
+웹 전용 설치는 `python -m pip install -e '.[test]'`과 `stickman-lecture doctor`를 사용한다. 두 모드의 검증에 Chromium이 필요하다. LaTeX 배포판은 필요 없다.
 
-## 예제 실행
+## 사용하기
+
+Codex에서 다음처럼 요청한다.
+
+```text
+$stickman-lecture 졸라맨이 수레를 밀면 칼만 추정점이 움직이는 모습을 MP4와 조작 가능한 HTML 둘 다로 만들어줘
+```
+
+MP4, 조작 가능한 HTML, 둘 다 중 원하는 형식을 적는다. 형식을 지정하지 않으면 스킬이 제작 전에 먼저 묻고 답을 기다린다.
+
+포함된 장면을 직접 검증하고 영상과 웹으로 렌더링할 수도 있다.
 
 ```bash
-stickman-lecture validate examples/shapes/scene.json
-stickman-lecture render examples/shapes/scene.json --mode both
-stickman-lecture render examples/mlp/scene.json --mode both
+stickman-lecture validate examples/stick-interaction/scene.json
+stickman-lecture render examples/stick-interaction/scene.json --mode both
 ```
+
+영상 출력의 `player.html`은 함께 저장된 `lesson.mp4`를 재생한다. 장면 목록에서 원하는 장면으로 이동할 수 있고 재생 위치에 따라 현재 장면이 표시된다. 두 파일을 함께 보관하면 오프라인으로 열 수 있다.
+
+웹 출력의 `web/index.html`은 슬라이더 같은 요소를 직접 조작하는 별도의 결과물이다. 웹 폴더를 함께 보관하면 오프라인으로 열 수 있다. 영상은 슬라이더의 기본값으로 렌더링된다. `--mode video` 또는 `--mode web`으로 필요한 결과만 선택할 수도 있다.
+
+영상은 말풍선 글자 수에 맞춰 읽는 시간을 자동으로 조정하고 효과음을 추가한다. 원래 장면 시간을 사용하려면 `--fixed-timing`, 모든 효과음을 끄려면 `--no-effects`를 지정한다. 말풍선 효과음만 끄는 `--no-bubble-sound`와 음원을 추가하는 `--audio`도 사용할 수 있다. `captions.srt`에는 영상 대사가 들어 있다.
+
+## 예제
 
 | 데모 | 모드 | 내용 |
 | --- | --- | --- |
-| [물의 순환](examples/shapes/storyboard.md) | `both` | 태양, 구름, 지표, 하천을 도형과 방향 화살표로 설명 |
-| [MLP](examples/mlp/storyboard.md) | `both` | 연결별 가중치, 은닉 뉴런별 계산, ReLU 그래프, 순전파 슬라이더 |
-| [칼만 필터](examples/kalman-filter/storyboard.md) | `video` | 한 축에 예측 분포, 관측 우도, 사후 분포를 순서대로 그림 |
-| [고유벡터](examples/linear-algebra/storyboard.md) | `web` | 고유방향과 반례를 그린 뒤 슬라이더로 고유값 변경 |
-| [RFS와 다중 베르누이](examples/rfs-intuition/storyboard.md) | `both` | 독립 베르누이 객체와 집합 및 개수 확률 설명 |
+| [수레를 밀어 보는 칼만 갱신](examples/stick-interaction/storyboard.md) | `both` | 수레, 관측점, 추정점과 갱신식 |
+| [칼만 필터](examples/kalman-filter/storyboard.md) | `video` | 예측 분포, 관측 우도와 사후 분포 |
 
-MLP 웹의 **입력을 직접 바꾸기** 장면에서 첫 입력을 2에서 4로 옮기면 은닉층 막대가 갱신되고 출력이 3에서 6으로 바뀐다.
+[전체 예제](examples/)는 `./scripts/render-demos.sh`로 재현할 수 있다. 출력 경로는 `--out`으로 변경할 수 있다.
 
-`./scripts/render-demos.sh`로 전체 예제를 재현할 수 있다. 결과는 `output/<예제 이름>/`에 저장되며 `--out`으로 경로를 바꿀 수 있다. 영상은 슬라이더 기본값으로 렌더링한다. 웹은 폴더 전체를 함께 보관하면 `web/index.html`을 오프라인으로 열 수 있다.
-
-- `lesson.mp4`와 `web/index.html`은 말풍선으로 설명을 보여 준다. `captions.srt`에는 영상 대사가 들어 있다. `--audio`로 준비한 음원을 영상에 추가할 수 있다.
-- `storyboard.md`, `scene.json`, `preview.png`, `validation.json`에서 제작 내용과 검증 결과를 확인할 수 있다.
-- `_work/run-*/`에는 중간 레이어, 렌더 단계별 로그와 확인용 프레임이 남는다.
-
-## 개발과 검증
+## 개발과 문서
 
 ```bash
 python -m pytest -q

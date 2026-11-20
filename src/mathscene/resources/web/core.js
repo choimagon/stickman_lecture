@@ -55,14 +55,44 @@
     return blendWeights(gesture.from, gesture.to, u * u * (3 - 2 * u));
   }
 
+  function trackValue(track, time) {
+    const keys = track.keyframes;
+    const index = keys.findIndex(key => key.at >= time);
+    if (index === 0) return keys[0].value;
+    if (index < 0) return keys.at(-1).value;
+    const [from, to] = [keys[index - 1], keys[index]];
+    const u = (time - from.at) / (to.at - from.at);
+    const eased = to.ease === "smooth" ? u * u * (3 - 2 * u) : u;
+    return from.value + (to.value - from.value) * eased;
+  }
+
+  function timelineValues(scene, local, overrides) {
+    const values = Object.fromEntries((scene.interactions ?? []).map(control => [control.id, control.default]));
+    for (const track of scene.tracks ?? []) values[track.id] = trackValue(track, local);
+    for (const [id, value] of Object.entries(overrides)) {
+      if (Object.hasOwn(values, id)) values[id] = value;
+    }
+    return values;
+  }
+
+  function dependsOn(expr, ids) {
+    return Array.isArray(expr) ? expr.slice(1).some(arg => dependsOn(arg, ids)) : ids.has(expr);
+  }
+
+  function anchor(layer) {
+    if (layer.type === "line" || layer.type === "vector") return [layer.x2, layer.y2];
+    if (layer.type === "rect") return [layer.x + layer.w / 2, layer.y + layer.h / 2];
+    return [layer.x, layer.y];
+  }
+
   function state(lesson, time, controls = {}, {reduceMotion = false} = {}) {
     const fps = lesson.canvas.fps;
     const frame = clamp(Math.floor(time * fps + 1e-7), 0, Math.round(lesson.duration * fps) - 1);
     const index = lesson.scenes.findLastIndex(scene => Math.round(scene.start * fps) <= frame);
     const scene = lesson.scenes[index];
     const local = Math.min(time, lesson.duration) - scene.start;
-    const values = Object.fromEntries((scene.interactions ?? []).map(control =>
-      [control.id, Object.hasOwn(controls, control.id) ? controls[control.id] : control.default]));
+    const values = timelineValues(scene, local, controls);
+    const tracked = new Set((scene.tracks ?? []).map(track => track.id));
     const hidden = new Set(scene.events.filter(event => ["show", "draw"].includes(event.action))
       .map(event => event.target));
     const gestures = new Map();
@@ -102,10 +132,27 @@
           ? reduceMotion ? {[gesture.to]: 1} : weightsAt(gesture, local)
           : {[layer.pose]: 1};
         resolved.bubble = speeches.get(layer.id) ?? resolved.bubble ?? (narrator?.id === layer.id ? scene.narration : "");
+        if (!reduceMotion && dependsOn(layer.bind?.x, tracked)) {
+          const before = Math.max(0, local - 1 / fps);
+          const after = Math.min(scene.duration, local + 1 / fps);
+          const displacement = evaluate(layer.bind.x, timelineValues(scene, after, controls)) -
+            evaluate(layer.bind.x, timelineValues(scene, before, controls));
+          resolved.walk = {distance: resolved.x - layer.x, speed: displacement / Math.max(after - before, 1 / fps)};
+        }
       }
       if (draws.has(layer.id)) resolved.progress = draws.get(layer.id);
       return resolved;
     });
+    const byId = new Map(layers.map(layer => [layer.id, layer]));
+    for (const layer of layers) {
+      if (!layer.touch || (layer.grip ?? 1) <= 0) continue;
+      const target = byId.get(layer.touch.target);
+      const visible = target && geometry(target, {complete: reduceMotion});
+      if (!visible) continue;
+      const [x, y] = anchor(visible);
+      layer.contact = {x: x + (layer.touch.offsetX ?? 0), y: y + (layer.touch.offsetY ?? 0),
+        grip: clamp(layer.grip ?? 1, 0, 1)};
+    }
     return {scene, index, local, values, layers};
   }
 
@@ -192,5 +239,5 @@
     return state.layers.filter(layer => layer.type === "stick" && layer.bubble)
       .map(layer => layer.bubble).join(" ");
   }
-  globalThis.MathScene = {paletteFor, font, clamp, evaluate, state, geometry, speech};
+  globalThis.MathScene = {paletteFor, font, clamp, evaluate, dependsOn, state, geometry, speech};
 })();

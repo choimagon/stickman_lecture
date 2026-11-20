@@ -4,8 +4,7 @@
 body { margin: 0; }
 main { max-width: 1460px; margin: auto; padding: 25px clamp(14px,4vw,60px) 48px; }
 .masthead { display: flex; gap: 20px; align-items: baseline; flex-wrap: wrap; margin-bottom: 20px; }
-.brand { color: #f5f7ff; font-family: ui-monospace,monospace; font-weight: 750; text-decoration: none; }
-.brand span { color: #72dfca; }
+.brand { color: #72dfca; font-weight: 750; }
 h1 { margin: 0; font-size: clamp(20px,3vw,34px); letter-spacing: -.04em; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 260px); gap: 20px; align-items: start; }
 .viewer, aside { min-width: 0; background: #121c2e; border: 1px solid #31415e; border-radius: 15px; overflow: hidden; }
@@ -45,8 +44,8 @@ dt { color: #f5f7ff; font-weight: 650; }
 dd { margin: 2px 0 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
 [data-theme="stick-studio"] { color-scheme: light; color: #141414; background: #fbfaf7; }
-[data-theme="stick-studio"] .brand, [data-theme="stick-studio"] dt { color: #141414; }
-[data-theme="stick-studio"] .brand span { color: #865608; }
+[data-theme="stick-studio"] dt { color: #141414; }
+[data-theme="stick-studio"] .brand { color: #865608; }
 [data-theme="stick-studio"] .viewer, [data-theme="stick-studio"] aside { background: #fff; border-color: #e3e0d8; }
 [data-theme="stick-studio"] .stage { background: #fff; }
 [data-theme="stick-studio"] .stage::after { border-color: #e6e4dd; }

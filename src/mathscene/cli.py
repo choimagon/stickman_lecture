@@ -1,4 +1,4 @@
-"""Stickman Lecture CLI and export orchestration."""
+"""StickMan Lecture CLI and export orchestration."""
 import argparse
 import importlib.util
 import json
@@ -12,7 +12,9 @@ from concurrent.futures import ThreadPoolExecutor
 from fractions import Fraction
 from pathlib import Path
 
+from .audio import bubble_cues, visual_cues, write_effect_track
 from .scene import RESOURCES, SceneError, load_scene
+from .video_player import write_video_player
 
 
 class RenderError(RuntimeError):
@@ -64,7 +66,7 @@ def build_web(lesson, node, home, work):
     web = work / "web"
     web.mkdir()
     sources = RESOURCES / "web"
-    for name in ("index.html", "style.css", "core.js", "stick.js", "player.js"):
+    for name in ("index.html", "style.css", "core.js", "stick-scene.js", "stick-scene.LICENSE.txt", "stick.js", "player.js"):
         shutil.copyfile(sources / name, web / name)
     serialized = json.dumps(lesson, ensure_ascii=True, allow_nan=False)
     (web / "scene-data.js").write_text("globalThis.MATHSCENE_LESSON = JSON.parse(" +
@@ -125,7 +127,7 @@ def write_srt(segments, fps, path):
     path.write_text("\n\n".join(entries) + "\n", encoding="utf-8")
 
 
-def build_video(lesson, scene_file, node, home, work, preview, audio):
+def build_video(lesson, scene_file, node, home, work, preview, audio, bubble_sound, visual_sound):
     if importlib.util.find_spec("manim") is None:
         raise RenderError("ManimCE is missing. Install the mathscene[video] extra.")
     ffmpeg, ffprobe = executable("ffmpeg"), executable("ffprobe")
@@ -134,6 +136,10 @@ def build_video(lesson, scene_file, node, home, work, preview, audio):
         width, height = max(2, width // 4 * 2), max(2, height // 4 * 2)
     frames = round(lesson["duration"] * fps)
     bridge("prepare", node, home, work, scene_file, work)
+    segments = json.loads((work / "segments.json").read_text(encoding="utf-8"))["segments"]
+    bubbles = bubble_cues(segments) if bubble_sound else []
+    visuals = visual_cues(segments) if visual_sound else []
+    cues = [(frame, "bubble") for frame in bubbles] + visuals
     with ThreadPoolExecutor(max_workers=2) as executor:
         manim = executor.submit(run, "manim", [sys.executable, "-m", "mathscene.manim_render", str(work),
                                                str(width), str(height)], work)
@@ -148,15 +154,29 @@ def build_video(lesson, scene_file, node, home, work, preview, audio):
         raise RenderError("Canvas overlay has no expected alpha channel")
     lesson_video = work / "lesson.mp4"
     command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", str(math_video), "-i", str(stick_video)]
+    filters = "[0:v][1:v]overlay=shortest=1:format=auto,format=yuv420p[v]"
     if audio:
         command += ["-i", str(audio)]
-    command += ["-filter_complex", "[0:v][1:v]overlay=shortest=1:format=auto,format=yuv420p[v]",
-                "-map", "[v]", "-frames:v", str(frames), "-c:v", "libx264", "-preset", "fast",
+    if cues:
+        effects = work / "effects.wav"
+        write_effect_track(effects, cues, frames, fps)
+        command += ["-i", str(effects)]
+        if audio:
+            filters += (";[2:a:0]apad[base];[3:a:0]volume=0.5[effects];"
+                        "[base][effects]amix=inputs=2:duration=first:normalize=0,"
+                        "alimiter=limit=0.95:level=0:latency=1[a]")
+    command += ["-filter_complex", filters, "-map", "[v]", "-frames:v", str(frames),
+                "-c:v", "libx264", "-preset", "fast",
                 "-crf", "19", "-movflags", "+faststart"]
-    if audio:
-        command += ["-map", "2:a:0", "-af", "apad", "-t", f"{frames / fps:.9f}", "-c:a", "aac"]
+    if audio or cues:
+        command += ["-map", "[a]" if audio and cues else "2:a:0"]
+        if audio and not cues:
+            command += ["-af", "apad"]
+        command += ["-t", f"{frames / fps:.9f}", "-c:a", "aac"]
     run("composite", [*command, str(lesson_video)], work)
     report = verify_video(ffprobe, lesson_video, width, height, fps, frames)
+    if report["hasAudio"] != bool(audio or cues):
+        raise RenderError("Unexpected audio track in the lesson")
     run("decode", [ffmpeg, "-v", "error", "-xerror", "-i", str(lesson_video), "-f", "null", "-"], work)
     reel = work / "video-frames"
     reel.mkdir()
@@ -167,15 +187,29 @@ def build_video(lesson, scene_file, node, home, work, preview, audio):
                                   "-frames:v", "1", str(path)], work)
         if i == min(2, len(lesson["scenes"]) - 1):
             shutil.copyfile(path, work / "video-preview.png")
-    segments = json.loads((work / "segments.json").read_text(encoding="utf-8"))["segments"]
     write_srt(segments, fps, work / "captions.srt")
-    animated_frames = sum(part["frames"] for part in segments if any("drawFrames" in layer for layer in part["layers"]))
+    write_video_player(lesson, work / "player.html")
+    animated_frames = sum(part["frames"] for part in segments if part["drawing"])
+    tracked_frames = sum(part["frames"] for part in segments if part["tracked"])
     return {**report, "overlay": alpha, "motion": json.loads((work / "motion.json").read_text()),
-            "drawFrames": animated_frames, "decoded": True, "screenshots": len(lesson["scenes"])}
+            "bubbleSoundCues": len(bubbles), "visualSoundCues": len(visuals), "drawFrames": animated_frames,
+            "trackedFrames": tracked_frames,
+            "decoded": True, "screenshots": len(lesson["scenes"]), "htmlPlayer": "player.html"}
 
 
-def storyboard(lesson, source_path, dest):
+def storyboard(lesson, source_path, dest, paced=False):
     original = source_path.with_name("storyboard.md")
+    if original.is_file() and original.resolve() != dest.resolve() and paced:
+        rows = [f"# {lesson['title']}", "", "## 최종 영상 시간표", "",
+                "| 시각 | 장면 |", "| --- | --- |"]
+        for s in lesson["scenes"]:
+            rows.append(f"| {timestamp(s['start']).split(',')[0]} | {s['title'].replace('|', '￨')} |")
+        source = original.read_text(encoding="utf-8")
+        if source.startswith("# "):
+            source = source.split("\n", 1)[-1].lstrip()
+        rows += ["", "## 제작 시 작성한 장면 계획", "", source]
+        dest.write_text("\n".join(rows), encoding="utf-8")
+        return
     if original.is_file():
         if original.resolve() != dest.resolve():
             shutil.copyfile(original, dest)
@@ -209,9 +243,22 @@ def render(args):
               "run": str(work.relative_to(out)), "exports": {}}
     prepared = work / "scene.json"
     json_file(prepared, lesson)
+    paced = False
     try:
         node = executable("node")
         home = node_home(scene_path.parent)
+        if "video" in wanted and not args.fixed_timing:
+            source_duration = lesson["duration"]
+            adjusted = work / "paced.json"
+            bridge("pace", node, home, work, prepared, adjusted)
+            candidate, _ = load_scene(adjusted)
+            if candidate != lesson:
+                paced = True
+                lesson = candidate
+                json_file(prepared, lesson)
+            report["pacing"] = {"sourceDuration": source_duration, "duration": lesson["duration"], "changed": paced}
+            report["timeline"] = [{"id": s["id"], "start": s["start"], "duration": s["duration"]}
+                                  for s in lesson["scenes"]]
         for medium in wanted:
             stage = work / medium
             stage.mkdir()
@@ -224,8 +271,9 @@ def render(args):
                     if mode == "web":
                         shutil.copyfile(stage / "web-preview.png", out / "preview.png")
                 else:
-                    detail = build_video(lesson, prepared, node, home, stage, args.preview, args.audio)
-                    for name in ("lesson.mp4", "captions.srt"):
+                    detail = build_video(lesson, prepared, node, home, stage, args.preview, args.audio,
+                                         not (args.no_effects or args.no_bubble_sound), not args.no_effects)
+                    for name in ("lesson.mp4", "captions.srt", "player.html"):
                         publish(stage / name, out / name, work)
                     shutil.copyfile(stage / "video-preview.png", out / "preview.png")
                 report["exports"][medium] = {"ok": True, **detail}
@@ -233,13 +281,18 @@ def render(args):
                 report["exports"][medium] = {"ok": False, "error": str(exc)}
                 print(exc, file=sys.stderr)
         report["ok"] = all(r["ok"] for r in report["exports"].values())
-    except RenderError as exc:
+    except (RenderError, SceneError) as exc:
         report["error"] = str(exc)
         print(exc, file=sys.stderr)
     finally:
-        if scene_path != (out / "scene.json").resolve():
-            shutil.copyfile(prepared, out / "scene.json")
-        storyboard(lesson, scene_path, out / "storyboard.md")
+        published_scene = out / "scene.json"
+        if scene_path != published_scene.resolve():
+            shutil.copyfile(prepared, published_scene)
+        elif paced:
+            published_scene = out / "rendered-scene.json"
+            shutil.copyfile(prepared, published_scene)
+        report["renderedScene"] = published_scene.name
+        storyboard(lesson, scene_path, out / "storyboard.md", paced)
         json_file(out / "validation.json", report)
     print(f"Validation report: {out / 'validation.json'}")
     return int(not report["ok"])
@@ -279,6 +332,36 @@ def validate(args):
     return 0
 
 
+def player(args):
+    directory = args.directory.resolve()
+    video = directory / "lesson.mp4"
+    if not video.is_file():
+        raise RenderError(f"No rendered video at {video}")
+    scene_name = "scene.json"
+    report = directory / "validation.json"
+    if report.is_file():
+        try:
+            recorded = json.loads(report.read_text(encoding="utf-8")).get("renderedScene", scene_name)
+        except (AttributeError, ValueError) as exc:
+            raise RenderError(f"Invalid render report: {report}") from exc
+        if recorded not in ("scene.json", "rendered-scene.json"):
+            raise RenderError(f"Unexpected scene file in {report}")
+        scene_name = recorded
+    lesson, _checks = load_scene(directory / scene_name)
+    try:
+        streams = probe(executable("ffprobe"), video)["streams"]
+        stream = next(stream for stream in streams if stream["codec_type"] == "video")
+        duration = float(stream["duration"])
+    except (KeyError, StopIteration, ValueError, subprocess.CalledProcessError) as exc:
+        raise RenderError(f"Could not read the duration of {video}") from exc
+    if abs(duration - lesson["duration"]) > .002:
+        raise RenderError("The saved scene times do not match lesson.mp4. Use the scene from the video render.")
+    destination = directory / "player.html"
+    write_video_player(lesson, destination)
+    print(f"Video player: {destination}")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="stickman-lecture", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -286,19 +369,24 @@ def main(argv=None):
     diagnostic.add_argument("--video", action="store_true", help="require video dependencies")
     validation = commands.add_parser("validate", help="verify schema, timeline and math assertions")
     validation.add_argument("scene", type=Path)
+    navigation = commands.add_parser("player", help="create a chapter player for an already rendered MP4")
+    navigation.add_argument("directory", type=Path, help="folder containing lesson.mp4 and the rendered scene")
     rendering = commands.add_parser("render", help="render a lesson from scene.json")
     rendering.add_argument("scene", type=Path)
     rendering.add_argument("--out", type=Path)
     rendering.add_argument("--mode", default="video", choices=["video", "web", "both"])
     rendering.add_argument("--preview", action="store_true", help="halve the video resolution while retaining the frame rate")
-    rendering.add_argument("--audio", type=Path, help="optional local audio file to mux into video")
+    rendering.add_argument("--audio", type=Path, help="optional local audio file to mix into video")
+    rendering.add_argument("--no-bubble-sound", action="store_true", help="omit the sound at speech bubble changes")
+    rendering.add_argument("--no-effects", action="store_true", help="omit all generated sound effects")
+    rendering.add_argument("--fixed-timing", action="store_true", help="use the original scene times")
     args = parser.parse_args(argv)
     if getattr(args, "audio", None):
         if args.mode == "web" or not args.audio.is_file():
             parser.error("--audio requires video output and a local audio file")
         args.audio = args.audio.resolve()
     try:
-        return {"doctor": doctor, "validate": validate, "render": render}[args.command](args)
+        return {"doctor": doctor, "validate": validate, "render": render, "player": player}[args.command](args)
     except (SceneError, RenderError, OSError) as exc:
         print(f"stickman-lecture: {exc}", file=sys.stderr)
         return 1

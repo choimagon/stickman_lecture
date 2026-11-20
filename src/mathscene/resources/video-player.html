@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>졸라맨 강의</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Apple SD Gothic Neo", "Noto Sans CJK KR", "Malgun Gothic", system-ui, sans-serif;
+      color: #1d211f;
+      background: #fbfaf7;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: min(1380px, 100%); padding: 28px clamp(14px, 4vw, 54px) 42px; margin: auto; }
+    header { margin-bottom: 19px; }
+    .brand { margin: 0 0 6px; color: #76561a; font-weight: 750; font-size: .83rem; }
+    h1 { margin: 0; font-size: clamp(1.5rem, 3vw, 2.22rem); line-height: 1.24; overflow-wrap: anywhere; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 310px); gap: 15px; align-items: start; }
+    .viewer, nav { min-width: 0; border: 1px solid #e0dbd0; border-radius: 12px; background: #fff; }
+    .viewer { overflow: hidden; }
+    video { display: block; width: 100%; aspect-ratio: var(--video-aspect, 16 / 9); background: #fff; }
+    .transport { padding: 12px 14px; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid #e9e5dc; }
+    .navigation { display: flex; gap: 7px; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    button:focus-visible, a:focus-visible { outline: 2px solid #146b56; outline-offset: 2px; }
+    .navigation button { padding: .48rem .7rem; border: 1px solid #ded8ca; border-radius: 6px; background: #fff; }
+    .navigation button:hover:enabled { background: #fdf3d1; }
+    button:disabled { opacity: .44; cursor: default; }
+    #scene-position { margin: 0; color: #56544a; font-size: .89rem; }
+    nav { padding: 14px; }
+    h2 { margin: 0 0 10px; font-size: 1rem; }
+    ol { list-style: none; padding: 2px 3px 2px 2px; margin: 0; display: grid; gap: 5px; max-height: min(65vh, 580px); overflow-y: auto; }
+    li button {
+      width: 100%; display: grid; grid-template-columns: 2ch minmax(0, 1fr) max-content;
+      gap: .64rem; align-items: baseline; padding: 8px; border: 1px solid transparent;
+      border-radius: 6px; background: #fff; text-align: left; line-height: 1.33;
+    }
+    li button:hover { background: #faf7ed; }
+    li button[aria-current="true"] { background: #fdf3d1; border-color: #d6b963; font-weight: 720; }
+    .index, .time { color: #6b614a; font: .75rem ui-monospace, monospace; white-space: nowrap; }
+    .scene-name { min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
+    #video-error { margin: 0; padding: 12px 14px; background: #fff3e4; color: #65451b; line-height: 1.55; }
+    #video-error a { color: #53380d; }
+    @media (max-width: 790px) {
+      main { padding-top: 18px; }
+      .layout { grid-template-columns: minmax(0, 1fr); }
+      ol { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p id="brand" class="brand">졸라맨 강의</p>
+      <h1 id="title"></h1>
+    </header>
+    <div class="layout">
+      <section class="viewer" aria-label="강의 영상">
+        <video id="lesson-video" controls playsinline preload="metadata" src="lesson.mp4">
+          <a href="lesson.mp4">MP4 영상 열기</a>
+        </video>
+        <div class="transport">
+          <p id="scene-position" aria-live="polite"></p>
+          <div class="navigation" aria-label="장면 이동">
+            <button id="previous" type="button">이전 장면</button>
+            <button id="next" type="button">다음 장면</button>
+          </div>
+        </div>
+        <p id="video-error" role="status" hidden>영상을 열 수 없습니다. 이 HTML 파일과 lesson.mp4를 같은 폴더에 두고 다시 열어 주세요. <a href="lesson.mp4">MP4 열기</a></p>
+      </section>
+      <nav aria-labelledby="scene-list-title">
+        <h2 id="scene-list-title">장면 선택</h2>
+        <ol id="chapters"></ol>
+      </nav>
+    </div>
+  </main>
+  <script id="video-lesson" type="application/json">__STICKMAN_VIDEO_DATA__</script>
+  <script>
+    const {title, locale, width, height, scenes} = JSON.parse(document.getElementById("video-lesson").textContent);
+    const get = id => document.getElementById(id);
+    const video = get("lesson-video");
+    const buttons = [];
+    let selected = -1;
+    let queued = null;
+    document.documentElement.lang = locale;
+    const brand = /^ko(?:-|$)/i.test(locale) ? "졸라맨 강의" : "StickMan Lecture";
+    get("brand").textContent = brand;
+    document.title = title + " · " + brand;
+    get("title").textContent = title;
+    video.style.setProperty("--video-aspect", width + " / " + height);
+
+    function stamp(seconds) {
+      const secondsWhole = Math.floor(seconds);
+      const hours = Math.floor(secondsWhole / 3600);
+      const minutes = String(Math.floor(secondsWhole / 60) % 60).padStart(2, "0");
+      return (hours ? hours + ":" : "") + minutes + ":" + String(secondsWhole % 60).padStart(2, "0");
+    }
+
+    function select(index) {
+      if (selected === index) return;
+      buttons[selected]?.removeAttribute("aria-current");
+      selected = index;
+      buttons[index].setAttribute("aria-current", "true");
+      get("scene-position").textContent = "장면 " + (index + 1) + " / " + scenes.length + " · " + scenes[index].title;
+      get("previous").disabled = index === 0;
+      get("next").disabled = index === scenes.length - 1;
+    }
+
+    function jump(index) {
+      if (index < 0 || index >= scenes.length) return;
+      select(index);
+      if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        video.currentTime = scenes[index].start;
+      } else {
+        queued = index;
+      }
+    }
+
+    function matchTime() {
+      if (queued !== null) return;
+      let index = scenes.length - 1;
+      while (index > 0 && scenes[index].start > video.currentTime + .001) index--;
+      select(index);
+    }
+
+    scenes.forEach((scene, i) => {
+      const row = document.createElement("li");
+      const button = document.createElement("button");
+      const number = document.createElement("span");
+      const name = document.createElement("span");
+      const time = document.createElement("span");
+      button.type = "button";
+      number.className = "index";
+      number.textContent = String(i + 1).padStart(2, "0");
+      name.className = "scene-name";
+      name.textContent = scene.title;
+      time.className = "time";
+      time.textContent = stamp(scene.start);
+      button.append(number, name, time);
+      button.addEventListener("click", event => {
+        jump(i);
+        if (event.detail && matchMedia("(max-width: 790px)").matches) {
+          video.closest(".viewer").scrollIntoView({block: "start"});
+        }
+      });
+      buttons.push(button);
+      row.append(button);
+      get("chapters").append(row);
+    });
+
+    get("previous").addEventListener("click", () => jump(selected - 1));
+    get("next").addEventListener("click", () => jump(selected + 1));
+    video.addEventListener("loadedmetadata", () => {
+      if (queued === null) matchTime();
+      else {
+        const index = queued;
+        queued = null;
+        jump(index);
+      }
+    });
+    ["seeking", "seeked", "timeupdate", "ended"].forEach(event => video.addEventListener(event, matchTime));
+    video.addEventListener("error", () => { get("video-error").hidden = false; });
+    if (video.error) get("video-error").hidden = false;
+    matchTime();
+  </script>
+</body>
+</html>

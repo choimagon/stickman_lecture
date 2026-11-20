@@ -7,7 +7,7 @@ destination="$skill_dir/stickman-lecture"
 
 mkdir -p -- "$skill_dir"
 if [[ -L "$destination" && "$(readlink "$destination")" == "$project_dir/skills/stickman-lecture" ]]; then
-    printf 'Stickman Lecture is already linked at %s\n' "$destination"
+    printf 'StickMan Lecture is already linked at %s\n' "$destination"
     exit 0
 fi
 if [[ -e "$destination" || -L "$destination" ]]; then
@@ -15,4 +15,4 @@ if [[ -e "$destination" || -L "$destination" ]]; then
     exit 1
 fi
 ln -s -- "$project_dir/skills/stickman-lecture" "$destination"
-printf 'Stickman Lecture linked at %s\n' "$destination"
+printf 'StickMan Lecture linked at %s\n' "$destination"

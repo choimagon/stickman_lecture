@@ -1,5 +1,5 @@
 interface:
-  display_name: "스틱맨렉처"
-  short_description: "도형과 화살표를 그리며 스틱 캐릭터의 말풍선으로 과정 설명"
+  display_name: "StickMan Lecture · 졸라맨 강의"
+  short_description: "원본 졸라맨이 물체를 움직이면 그래프와 수치가 함께 반응하는 시각 강의"
   brand_color: "#F6D365"
-  default_prompt: "$stickman-lecture로 물의 순환을 도형과 화살표로 그리면서 각 단계를 자세히 설명해 줘."
+  default_prompt: "$stickman-lecture로 수레를 밀 때 그래프에 나타나는 변화를 보여 주고 수식으로 연결해 줘."

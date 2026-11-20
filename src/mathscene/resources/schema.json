@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Stickman Lecture Scene IR 0.1",
+  "title": "StickMan Lecture Scene IR 0.1",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "title", "locale", "audience", "duration", "canvas", "theme", "definitions", "scenes", "exports"],
@@ -62,6 +62,13 @@
           "type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}
         }},
         "pose": {"$ref": "#/$defs/pose"}, "bubble": {"$ref": "#/$defs/label"},
+        "grip": {"type": "number", "minimum": 0, "maximum": 1},
+        "touch": {
+          "type": "object", "additionalProperties": false, "required": ["target"],
+          "properties": {
+            "target": {"$ref": "#/$defs/id"}, "offsetX": {"type": "number"}, "offsetY": {"type": "number"}
+          }
+        },
         "bind": {"type": "object", "additionalProperties": {"$ref": "#/$defs/expr"}}
       },
       "allOf": [
@@ -74,7 +81,8 @@
         {"if": {"properties": {"type": {"const": "polygon"}}}, "then": {"required": ["points"], "properties": {"points": {"minItems": 3}}}},
         {"if": {"properties": {"type": {"const": "gaussian"}}}, "then": {"required": ["x", "y", "w", "h", "min", "max", "mean", "sigma"]}},
         {"if": {"properties": {"type": {"const": "polyline"}}}, "then": {"required": ["points"]}},
-        {"if": {"properties": {"type": {"const": "stick"}}}, "then": {"required": ["x", "y", "pose"]}}
+        {"if": {"properties": {"type": {"const": "stick"}}}, "then": {"required": ["x", "y", "pose"]},
+         "else": {"not": {"anyOf": [{"required": ["touch"]}, {"required": ["grip"]}]}}}
       ]
     },
     "scene": {
@@ -101,6 +109,19 @@
             {"if": {"properties": {"action": {"const": "draw"}}},
              "then": {"required": ["duration"]}, "else": {"not": {"required": ["duration"]}}}
           ]
+        }},
+        "tracks": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["id", "keyframes"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"},
+            "keyframes": {"type": "array", "minItems": 2, "items": {
+              "type": "object", "additionalProperties": false, "required": ["at", "value"],
+              "properties": {
+                "at": {"type": "number", "minimum": 0}, "value": {"type": "number"},
+                "ease": {"enum": ["linear", "smooth"]}
+              }
+            }}
+          }
         }},
         "interactions": {"type": "array", "items": {
           "type": "object", "additionalProperties": false, "required": ["id", "label", "min", "max", "step", "default"],

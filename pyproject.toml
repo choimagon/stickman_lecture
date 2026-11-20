@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mathscene"
 version = "0.1.0"
-description = "Stickman Lecture renderer for diagrams and interactive lessons"
+description = "StickMan Lecture renderer for diagrams and interactive lessons"
 requires-python = ">=3.11"
 dependencies = ["jsonschema>=4.23,<5", "numpy>=2,<3", "sympy>=1.13,<2"]
 

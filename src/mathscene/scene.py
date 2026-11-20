@@ -25,7 +25,7 @@ FUNCTIONS = {
 }
 VARIADIC = {"add", "mul", "max"}
 BINDABLE = {"x", "y", "x1", "y1", "x2", "y2", "w", "h", "r", "rx", "ry", "width",
-            "size", "scale", "text", "tex", "mean", "sigma", "bubble", "fill", "color"}
+            "size", "scale", "text", "tex", "mean", "sigma", "bubble", "fill", "color", "grip"}
 NUMERIC_FIELDS = BINDABLE - {"text", "tex", "bubble", "fill", "color"}
 COLORS = {"blue", "amber", "teal", "rose", "white", "muted", "grid", "ink", "foreground", "surface",
           "blue-tint", "amber-tint", "teal-tint"}
@@ -129,6 +129,8 @@ def verify_bindings(layer, controls, location):
                 if k in NUMERIC_FIELDS:
                     if type(value) not in (int, float) or not math.isfinite(value):
                         raise SceneError(f"binding {k} does not return a finite number")
+                    if k == "grip" and not 0 <= value <= 1:
+                        raise SceneError("grip binding must be between 0 and 1")
                     collapsed_rect = layer["type"] == "rect" and k in {"w", "h"} and value == 0
                     if k in {"w", "h", "r", "rx", "ry", "size", "scale", "width", "sigma"} and value <= 0 and not collapsed_rect:
                         raise SceneError(f"binding {k} must be positive")
@@ -147,6 +149,15 @@ def variables_in(expr, names):
     if isinstance(expr, list):
         return set().union(*(variables_in(part, names) for part in expr[1:]))
     return {expr} & names if isinstance(expr, str) else set()
+
+
+def scene_inputs(scene):
+    inputs = {control["id"]: control for control in scene.get("interactions", [])}
+    for track in scene.get("tracks", []):
+        values = [frame["value"] for frame in track["keyframes"]]
+        entry = inputs.get(track["id"], {"id": track["id"], "min": min(values), "max": max(values)})
+        inputs[track["id"]] = {**entry, "default": values[0]}
+    return inputs
 
 
 def verify_scene(lesson):
@@ -172,6 +183,18 @@ def verify_scene(lesson):
         require_unique([layer["id"] for layer in scene["layers"]], f"layer ID in {sid}")
         controls = scene.get("interactions", [])
         require_unique([control["id"] for control in controls], f"control ID in {sid}")
+        tracks = scene.get("tracks", [])
+        require_unique([track["id"] for track in tracks], f"track ID in {sid}")
+        control_map = {control["id"]: control for control in controls}
+        for track in tracks:
+            location = f"{sid}/{track['id']}"
+            ticks = [require_frame(k["at"], fps, location) for k in track["keyframes"]]
+            if ticks[0] != 0 or ticks != sorted(set(ticks)) or ticks[-1] > round(scene["duration"] * fps):
+                raise SceneError(f"{location}: track must start at 0 and advance within the scene")
+            control = control_map.get(track["id"])
+            if control and any(not control["min"] <= k["value"] <= control["max"] for k in track["keyframes"]):
+                raise SceneError(f"{location}: track is outside the slider range")
+        inputs = scene_inputs(scene)
         referred = set()
         for layer in layers.values():
             unknown = set(layer.get("symbols", [])) - set(definitions)
@@ -179,9 +202,18 @@ def verify_scene(lesson):
                 raise SceneError(f"{sid}/{layer['id']}: undefined symbols {sorted(unknown)}")
             if layer["type"] == "gaussian" and layer["min"] >= layer["max"]:
                 raise SceneError(f"{sid}/{layer['id']}: gaussian min must be smaller than max")
-            verify_bindings(layer, controls, f"{sid}/{layer['id']}")
+            if "grip" in layer and "touch" not in layer:
+                raise SceneError(f"{sid}/{layer['id']}: grip requires a touch target")
+            if "touch" in layer:
+                target = layers.get(layer["touch"]["target"])
+                if not target or target["type"] not in {"circle", "ellipse", "rect", "vector", "line"}:
+                    raise SceneError(f"{sid}/{layer['id']}: touch target must be a supported prop or pointer")
+            verify_bindings(layer, list(inputs.values()), f"{sid}/{layer['id']}")
             for binding in layer.get("bind", {}).values():
-                referred.update(variables_in(binding, {c["id"] for c in controls}))
+                referred.update(variables_in(binding, inputs.keys()))
+        for track in tracks:
+            if track["id"] not in referred:
+                raise SceneError(f"{sid}/{track['id']}: track has no layer binding")
         for control in controls:
             lo, hi, initial = (control[k] for k in ("min", "max", "default"))
             step = control["step"]
@@ -228,9 +260,9 @@ def verify_checks(lesson):
         try:
             if kind == "sample":
                 scene = scenes[check["scene"]]
-                controls = {c["id"]: c for c in scene.get("interactions", [])}
+                controls = scene_inputs(scene)
                 if not set(check["inputs"]) <= controls.keys():
-                    raise SceneError("sample names an unknown slider")
+                    raise SceneError("sample names an unknown slider or track")
                 for name, value in check["inputs"].items():
                     if not controls[name]["min"] <= value <= controls[name]["max"]:
                         raise SceneError(f"sample is outside the range for {name}")

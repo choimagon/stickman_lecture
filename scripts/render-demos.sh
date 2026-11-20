@@ -8,3 +8,4 @@ stickman-lecture render examples/kalman-filter/scene.json --mode video
 stickman-lecture render examples/linear-algebra/scene.json --mode web
 stickman-lecture render examples/rfs-intuition/scene.json --mode both
 stickman-lecture render examples/shapes/scene.json --mode both
+stickman-lecture render examples/stick-interaction/scene.json --mode both

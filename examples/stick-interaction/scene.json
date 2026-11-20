@@ -1,0 +1,576 @@
+{
+  "version": "0.1",
+  "title": "손으로 밀어 보는 칼만 갱신",
+  "locale": "ko-KR",
+  "audience": "undergraduate",
+  "duration": 36,
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "theme": "stick-studio",
+  "definitions": [
+    {
+      "symbol": "x_prior",
+      "meaning": "관측 전 위치 예측"
+    },
+    {
+      "symbol": "x",
+      "meaning": "갱신된 위치 추정"
+    },
+    {
+      "symbol": "z",
+      "meaning": "관측된 위치"
+    },
+    {
+      "symbol": "K",
+      "meaning": "관측 차이에 적용하는 칼만 이득"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "push",
+      "stage": "intuition",
+      "title": "관측을 밀면 추정이 따라옵니다",
+      "start": 0,
+      "duration": 18,
+      "learning_goal": "관측이 이동할 때 이득 0.5인 추정은 예측에서 관측까지 절반만 이동함을 본다.",
+      "narration": "예측은 8입니다. 관측을 12로 옮기면 추정은 그 차이의 절반만 움직입니다.",
+      "tracks": [
+        {
+          "id": "z",
+          "keyframes": [
+            {
+              "at": 0,
+              "value": 8
+            },
+            {
+              "at": 4,
+              "value": 8
+            },
+            {
+              "at": 11,
+              "value": 12,
+              "ease": "smooth"
+            },
+            {
+              "at": 18,
+              "value": 12
+            }
+          ]
+        },
+        {
+          "id": "hold",
+          "keyframes": [
+            {
+              "at": 0,
+              "value": 0
+            },
+            {
+              "at": 2,
+              "value": 0
+            },
+            {
+              "at": 3,
+              "value": 1,
+              "ease": "smooth"
+            },
+            {
+              "at": 12,
+              "value": 1
+            },
+            {
+              "at": 13,
+              "value": 0,
+              "ease": "smooth"
+            },
+            {
+              "at": 18,
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "layers": [
+        {
+          "id": "rail",
+          "type": "line",
+          "x1": 270,
+          "y1": 555,
+          "x2": 520,
+          "y2": 555,
+          "color": "muted",
+          "width": 3
+        },
+        {
+          "id": "cart",
+          "type": "rect",
+          "x": 303,
+          "y": 493,
+          "w": 76,
+          "h": 45,
+          "fill": "amber-tint",
+          "color": "amber",
+          "width": 3,
+          "bind": {
+            "x": [
+              "add",
+              303,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "wheel1",
+          "type": "circle",
+          "x": 320,
+          "y": 545,
+          "r": 10,
+          "fill": "surface",
+          "color": "amber",
+          "width": 3,
+          "bind": {
+            "x": [
+              "add",
+              320,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "wheel2",
+          "type": "circle",
+          "x": 363,
+          "y": 545,
+          "r": 10,
+          "fill": "surface",
+          "color": "amber",
+          "width": 3,
+          "bind": {
+            "x": [
+              "add",
+              363,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "handle",
+          "type": "circle",
+          "x": 298,
+          "y": 480,
+          "r": 8,
+          "fill": "amber-tint",
+          "color": "amber",
+          "width": 3,
+          "bind": {
+            "x": [
+              "add",
+              298,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "stem",
+          "type": "line",
+          "x1": 298,
+          "y1": 488,
+          "x2": 310,
+          "y2": 493,
+          "color": "amber",
+          "width": 3,
+          "bind": {
+            "x1": [
+              "add",
+              298,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ],
+            "x2": [
+              "add",
+              310,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 247,
+          "y": 575,
+          "pose": "idle",
+          "touch": {
+            "target": "handle",
+            "offsetX": -8
+          },
+          "grip": 0,
+          "bind": {
+            "x": [
+              "add",
+              247,
+              [
+                "mul",
+                30,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ],
+            "grip": "hold"
+          }
+        },
+        {
+          "id": "axis",
+          "type": "line",
+          "x1": 590,
+          "y1": 415,
+          "x2": 1090,
+          "y2": 415,
+          "color": "muted",
+          "width": 3
+        },
+        {
+          "id": "tick8",
+          "type": "text",
+          "x": 590,
+          "y": 450,
+          "text": "8",
+          "size": 22,
+          "color": "muted"
+        },
+        {
+          "id": "tick12",
+          "type": "text",
+          "x": 990,
+          "y": 450,
+          "text": "12",
+          "size": 22,
+          "color": "muted"
+        },
+        {
+          "id": "prior",
+          "type": "circle",
+          "x": 600,
+          "y": 415,
+          "r": 9,
+          "fill": "blue",
+          "color": "blue",
+          "width": 2
+        },
+        {
+          "id": "measurement",
+          "type": "circle",
+          "x": 600,
+          "y": 385,
+          "r": 10,
+          "fill": "amber",
+          "color": "amber",
+          "width": 2,
+          "bind": {
+            "x": [
+              "add",
+              600,
+              [
+                "mul",
+                100,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "estimate",
+          "type": "circle",
+          "x": 600,
+          "y": 415,
+          "r": 10,
+          "fill": "teal",
+          "color": "teal",
+          "width": 2,
+          "bind": {
+            "x": [
+              "add",
+              600,
+              [
+                "mul",
+                50,
+                [
+                  "sub",
+                  "z",
+                  8
+                ]
+              ]
+            ]
+          }
+        },
+        {
+          "id": "legend",
+          "type": "text",
+          "x": 590,
+          "y": 295,
+          "text": "파랑: 예측 8    주황: 관측 z    청록: 갱신 추정",
+          "size": 21,
+          "color": "foreground"
+        },
+        {
+          "id": "reading",
+          "type": "text",
+          "x": 590,
+          "y": 335,
+          "text": "관측 z = 8    갱신 추정 = 8",
+          "size": 25,
+          "color": "foreground",
+          "bind": {
+            "text": [
+              "concat",
+              "관측 z = ",
+              [
+                "round",
+                "z",
+                1
+              ],
+              "    갱신 추정 = ",
+              [
+                "round",
+                [
+                  "add",
+                  8,
+                  [
+                    "mul",
+                    0.5,
+                    [
+                      "sub",
+                      "z",
+                      8
+                    ]
+                  ]
+                ],
+                1
+              ]
+            ]
+          }
+        },
+        {
+          "id": "caption",
+          "type": "text",
+          "x": 590,
+          "y": 500,
+          "text": "관측 쪽으로 차이의 절반만 이동",
+          "size": 24,
+          "color": "teal"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "예측은 8입니다."
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": ""
+        },
+        {
+          "at": 12,
+          "action": "speak",
+          "target": "teacher",
+          "value": "관측이 12일 때 추정은 10입니다."
+        },
+        {
+          "at": 16,
+          "action": "speak",
+          "target": "teacher",
+          "value": ""
+        }
+      ],
+      "interactions": [
+        {
+          "id": "z",
+          "label": "센서 관측값 z",
+          "min": 8,
+          "max": 12,
+          "step": 0.1,
+          "default": 8
+        }
+      ]
+    },
+    {
+      "id": "formula",
+      "stage": "equation",
+      "title": "움직임을 식으로",
+      "start": 18,
+      "duration": 18,
+      "learning_goal": "관측과 예측의 차이에 이득을 곱해 예측을 갱신한다.",
+      "narration": "관측과 예측의 차이는 4입니다. 이득 0.5를 곱해 예측 8에 더하면 10입니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 575,
+          "pose": "point_right"
+        },
+        {
+          "id": "general",
+          "type": "formula",
+          "x": 535,
+          "y": 300,
+          "tex": "\\hat{x}=\\hat{x}^{-}+K(z-\\hat{x}^{-})",
+          "size": 38,
+          "symbols": [
+            "x",
+            "x_prior",
+            "K",
+            "z"
+          ],
+          "color": "blue"
+        },
+        {
+          "id": "substitution",
+          "type": "formula",
+          "x": 535,
+          "y": 395,
+          "tex": "\\hat{x}=8+0.5(12-8)=10",
+          "size": 38,
+          "symbols": [
+            "x"
+          ],
+          "color": "teal"
+        },
+        {
+          "id": "explain",
+          "type": "text",
+          "x": 535,
+          "y": 485,
+          "text": "예측 8 + 차이 4의 절반 = 추정 10",
+          "size": 26,
+          "color": "foreground"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "이 움직임을 식으로 써 볼까요?"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "general"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "관측과 예측의 차이는 4입니다."
+        },
+        {
+          "at": 7,
+          "action": "show",
+          "target": "substitution"
+        },
+        {
+          "at": 8,
+          "action": "speak",
+          "target": "teacher",
+          "value": "그 절반을 8에 더하면 10입니다."
+        },
+        {
+          "at": 10,
+          "action": "show",
+          "target": "explain"
+        },
+        {
+          "at": 14,
+          "action": "speak",
+          "target": "teacher",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "exports": [
+    "web",
+    "video"
+  ],
+  "checks": [
+    {
+      "kind": "sample",
+      "scene": "push",
+      "inputs": {},
+      "actual": [
+        "add",
+        8,
+        [
+          "mul",
+          0.5,
+          [
+            "sub",
+            12,
+            8
+          ]
+        ]
+      ],
+      "expected": 10
+    }
+  ]
+}
