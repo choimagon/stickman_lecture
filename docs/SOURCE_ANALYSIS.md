@@ -20,6 +20,8 @@
 
 채택 결정은 시간에 따라 동일한 프레임을 그리는 독립 Canvas 구현이다. 이는 원본의 전역 DOM 뷰와 자체 씬의 시간 제어를 결합할 필요를 줄인다. 원본 검사기의 판정을 구현하지 않았다면 동등한 검사로 주장하지 않는다.
 
+화면 스타일은 원본 기본 장면을 일반 바닥과 지면으로 다시 렌더링해 비교했다. 원본이 사용하는 흰 배경, 화면 하단의 매우 옅은 회색 바닥, 가늘고 미세하게 흔들리는 검은 경계를 `stick-studio` 테마로 구현했다.
+
 ## ManimCE 자료
 
 `skills/manimce-best-practices/SKILL.md`와 `rules/latex.md`, `axes.md`, `graphing.md`, `lines.md`, `transform-animations.md`, `updaters.md`, `cli.md`는 각각 `MathTex`와 `Tex`, `Axes`와 `NumberPlane`, 그래프, `Vector`, `Transform`과 `ReplacementTransform`, `ValueTracker`와 updater, CLI를 설명한다. `Scene.construct()`에서 객체를 만들고 `self.play()`와 `self.wait()`로 시간을 구성한다. `Transform`은 원본 객체 참조에 결과가 남으며 `ReplacementTransform`은 대상을 교체한다. LaTeX와 시스템 렌더링 의존성이 필요하다.
@@ -36,4 +38,4 @@ CLI 자료의 `-ql`은 저품질 미리보기, `-qm`은 1280×720과 30fps 설�
 
 원본 `diffity-loop`를 Chrome 157과 Playwright에서 실행하고 0초, 3.35초, 6.70초, 10.05초 PNG를 추출했다. 마지막 세 시점의 연속 캡처는 바이트가 같았지만 최초 0초는 달랐다. 각 프레임에 투명 픽셀이 있었고 브라우저 페이지 오류는 없었다. 자세한 결과는 `output/technical-probes/stick/`에 있다.
 
-통합 렌더러에서는 ManimCE가 그린 칼만 필터 수식과 가우시안 곡선 위에, Chromium이 캡처한 투명 캐릭터와 자막을 FFmpeg로 합성했다. FFprobe에서 각 레이어와 최종 영상 길이는 90초, 프레임 수는 2700으로 일치했다. 장면별 PNG에서 가우시안 곡선, 캐릭터, 자막, 수식의 가시성을 확인했다. 다른 데모의 실행 결과는 [구현 현황](IMPLEMENTATION_STATUS.md)에 기록했다.
+통합 렌더러에서는 ManimCE가 그린 칼만 필터 수식과 가우시안 곡선 위에, Chromium이 캡처한 투명 캐릭터와 말풍선을 FFmpeg로 합성했다. FFprobe에서 각 레이어와 최종 영상 길이는 90초, 프레임 수는 2700으로 일치했다. 장면별 PNG에서 가우시안 곡선, 캐릭터, 말풍선, 수식의 가시성을 확인했다. 다른 데모의 실행 결과는 [구현 현황](IMPLEMENTATION_STATUS.md)에 기록했다.

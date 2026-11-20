@@ -1,0 +1,145 @@
+{
+  "version": "0.1",
+  "title": "강의 제목",
+  "locale": "ko-KR",
+  "audience": "undergraduate",
+  "duration": 12,
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "theme": "stick-studio",
+  "definitions": [],
+  "exports": [
+    "video",
+    "web"
+  ],
+  "checks": [],
+  "scenes": [
+    {
+      "id": "route",
+      "stage": "intuition",
+      "title": "두 부분이 연결되는 방법",
+      "start": 0,
+      "duration": 12,
+      "learning_goal": "도형의 역할과 화살표의 방향을 설명합니다.",
+      "narration": "물건이나 값이 어떤 경로를 따라 이동하는지 살펴봅시다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "idle"
+        },
+        {
+          "id": "start",
+          "type": "rect",
+          "x": 440,
+          "y": 232,
+          "w": 240,
+          "h": 136,
+          "color": "blue",
+          "fill": "blue-tint",
+          "width": 3
+        },
+        {
+          "id": "start_name",
+          "type": "text",
+          "x": 560,
+          "y": 300,
+          "text": "출발점",
+          "color": "blue",
+          "size": 28,
+          "align": "center"
+        },
+        {
+          "id": "end",
+          "type": "ellipse",
+          "x": 1070,
+          "y": 300,
+          "rx": 110,
+          "ry": 69,
+          "color": "teal",
+          "fill": "teal-tint",
+          "width": 3
+        },
+        {
+          "id": "end_name",
+          "type": "text",
+          "x": 1070,
+          "y": 300,
+          "text": "도착점",
+          "color": "teal",
+          "size": 28,
+          "align": "center"
+        },
+        {
+          "id": "path",
+          "type": "vector",
+          "x1": 688,
+          "y1": 300,
+          "x2": 955,
+          "y2": 300,
+          "color": "foreground",
+          "width": 3
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "draw",
+          "target": "start",
+          "duration": 1.5
+        },
+        {
+          "at": 1,
+          "action": "speak",
+          "target": "teacher",
+          "value": "사각형은 무엇이 출발하는 장소인지 알려 줍니다."
+        },
+        {
+          "at": 2.5,
+          "action": "show",
+          "target": "start_name"
+        },
+        {
+          "at": 4.5,
+          "action": "draw",
+          "target": "end",
+          "duration": 1.5
+        },
+        {
+          "at": 4.5,
+          "action": "speak",
+          "target": "teacher",
+          "value": "타원은 움직임이 끝나는 도착점을 나타냅니다."
+        },
+        {
+          "at": 6,
+          "action": "show",
+          "target": "end_name"
+        },
+        {
+          "at": 8,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 8,
+          "action": "draw",
+          "target": "path",
+          "duration": 2
+        },
+        {
+          "at": 8,
+          "action": "speak",
+          "target": "teacher",
+          "value": "화살촉을 따라가면 어느 방향으로 이동하는지 알 수 있습니다."
+        }
+      ]
+    }
+  ]
+}

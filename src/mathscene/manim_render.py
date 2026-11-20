@@ -5,7 +5,10 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from manim import Circle, Line, Polygon, RoundedRectangle, Scene, SVGMobject, Text, VGroup, VMobject, tempconfig
+from manim import (
+    Circle, Ellipse, Line, Polygon, Rectangle, Scene, SVGMobject, Text, UpdateFromAlphaFunc,
+    VGroup, VMobject, linear, tempconfig,
+)
 from manimpango import list_fonts
 
 
@@ -45,7 +48,7 @@ class MathLayer(Scene):
 
     def layer(self, source):
         kind = source["type"]
-        color = self.palette[source.get("color", "white")]
+        color = self.palette[source.get("color", "foreground")]
         fill = self.palette[source["fill"]] if "fill" in source else color
         stroke = source.get("width", 2.5) * self.unit * 90
         if kind in {"text", "formula"}:
@@ -62,16 +65,21 @@ class MathLayer(Scene):
                           fill_color=fill, fill_opacity=int("fill" in source)).move_to(
                 self.point(source["x"], source["y"])
             )
+        if kind == "ellipse":
+            item = Ellipse(width=2 * source["rx"] * self.unit, height=2 * source["ry"] * self.unit,
+                           color=color, stroke_width=stroke, fill_color=fill, fill_opacity=int("fill" in source))
+            return item.move_to(self.point(source["x"], source["y"]))
         if kind == "rect":
             w, h = source["w"], source["h"]
             if not w or not h:
                 return VMobject()
-            item = RoundedRectangle(width=w * self.unit, height=h * self.unit,
-                                    corner_radius=min(5, w / 4, h / 4) * self.unit,
-                                    color=color, stroke_width=stroke, fill_color=fill,
-                                    fill_opacity=int("fill" in source))
+            item = Rectangle(width=w * self.unit, height=h * self.unit, color=color,
+                             stroke_width=stroke, fill_color=fill, fill_opacity=int("fill" in source))
             return item.move_to(self.point(source["x"] + w / 2, source["y"] + h / 2))
-        if kind == "gaussian":
+        if kind == "polygon":
+            return Polygon(*(self.point(*p) for p in source["points"]), color=color,
+                           stroke_width=stroke, fill_color=fill, fill_opacity=int("fill" in source))
+        if kind in {"gaussian", "polyline"}:
             item = VMobject(color=color, stroke_width=stroke)
             return item.set_points_as_corners([self.point(*p) for p in source["points"]])
         start = self.point(source["x1"], source["y1"])
@@ -106,7 +114,8 @@ class MathLayer(Scene):
                 self.add(*self.header(index))
                 previous = index
                 rendered = {}
-            layers = []
+            layers = VGroup()
+            animated = []
             for layer in segment["layers"]:
                 item = rendered.get(layer["id"])
                 if item is None:
@@ -117,11 +126,27 @@ class MathLayer(Scene):
                     if left < -max_x or right > max_x or bottom < -max_y or top > max_y:
                         raise ValueError(f"{self.lesson['scenes'][index]['id']}/{layer['id']} outside video frame")
                     rendered[layer["id"]] = item
-                layers.append(item)
-            self.add(*layers)
-            # A fractional-frame epsilon avoids Cairo truncation at exact integer boundaries.
-            self.wait((segment["frames"] + .001) / fps, frozen_frame=True)
-            self.remove(*layers)
+                if "drawFrames" in layer:
+                    path = VGroup()
+                    animated.append((path, layer, layer["drawFrames"]))
+                    layers.add(path)
+                else:
+                    layers.add(item)
+            self.add(layers)
+            frames = segment["frames"]
+            if animated:
+                def update(_group, alpha):
+                    frame = min(round(alpha * frames), frames - 1)
+                    for path, layer, snapshots in animated:
+                        sample = snapshots[frame]
+                        path.submobjects = [] if sample is None else [self.layer({**layer, **sample})]
+
+                # Cairo samples an exclusive end time. Keep exactly the authored frame count.
+                self.play(UpdateFromAlphaFunc(layers, update, rate_func=linear,
+                                               run_time=(frames - .001) / fps))
+            else:
+                self.wait((frames + .001) / fps, frozen_frame=True)
+            self.remove(layers)
 
 
 def main():

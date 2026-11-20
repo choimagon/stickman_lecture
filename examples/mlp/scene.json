@@ -1,31 +1,39 @@
 {
   "version": "0.1",
-  "title": "다층 퍼셉트론의 한 번의 계산",
+  "title": "다층 퍼셉트론의 순전파",
   "locale": "ko-KR",
   "audience": "undergraduate",
-  "duration": 36,
+  "duration": 124,
   "canvas": {
     "width": 1280,
     "height": 720,
     "fps": 30
   },
-  "theme": "dark-academic",
+  "theme": "stick-studio",
   "definitions": [
     {
       "symbol": "x_1",
-      "meaning": "첫 번째 입력"
+      "meaning": "첫 번째 입력 특성"
     },
     {
       "symbol": "x_2",
-      "meaning": "두 번째 입력"
+      "meaning": "두 번째 입력 특성"
+    },
+    {
+      "symbol": "z_1",
+      "meaning": "첫 은닉 뉴런의 가중합과 편향"
+    },
+    {
+      "symbol": "z_2",
+      "meaning": "둘째 은닉 뉴런의 가중합과 편향"
     },
     {
       "symbol": "h_1",
-      "meaning": "첫 은닉 뉴런의 활성값"
+      "meaning": "첫 은닉 뉴런의 ReLU 활성값"
     },
     {
       "symbol": "h_2",
-      "meaning": "두 번째 은닉 뉴런의 활성값"
+      "meaning": "둘째 은닉 뉴런의 ReLU 활성값"
     },
     {
       "symbol": "y",
@@ -33,417 +41,1101 @@
     },
     {
       "symbol": "z",
-      "meaning": "ReLU의 입력"
+      "meaning": "ReLU에 입력되는 수"
     }
   ],
   "scenes": [
     {
       "id": "why",
       "stage": "why",
-      "title": "왜 중간층이 필요할까요?",
+      "title": "두 특성으로 하나의 값을 예측하기",
       "start": 0,
-      "duration": 6,
-      "learning_goal": "왜 중간층이 필요할까요?",
-      "narration": "두 입력에서 하나의 값을 예측해 봅시다.",
+      "duration": 8,
+      "learning_goal": "두 특성으로 하나의 값을 예측하기",
+      "narration": "두 특성에서 하나의 출력을 만들어 봅시다.",
       "layers": [
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "wave"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "두 특성에서 하나의 출력을 만들어 봅시다."
         },
         {
-          "id": "q",
+          "id": "why1",
           "type": "text",
-          "x": 450,
-          "y": 300,
-          "text": "두 입력  →  중간 표현  →  하나의 출력",
-          "size": 36,
-          "color": "teal"
+          "x": 460,
+          "y": 250,
+          "text": "두 특성  →  중간 표현  →  예측값",
+          "color": "teal",
+          "size": 38
         },
         {
-          "id": "q2",
+          "id": "why2",
           "type": "text",
-          "x": 450,
-          "y": 410,
-          "text": "중간 뉴런은 서로 다른 관점을 만듭니다.",
-          "size": 30,
-          "color": "white"
+          "x": 460,
+          "y": 360,
+          "text": "중간 뉴런은 입력을 서로 다르게 조합합니다.",
+          "color": "foreground",
+          "size": 29
         }
       ],
       "events": [
         {
-          "at": 1,
-          "action": "show",
-          "target": "q2"
-        },
-        {
-          "at": 1,
-          "action": "gesture",
+          "at": 4,
+          "action": "speak",
           "target": "teacher",
-          "value": "point_right"
+          "value": "중간층에서 서로 다른 관점을 만듭니다."
         }
       ]
     },
     {
-      "id": "intuition",
+      "id": "features",
       "stage": "intuition",
-      "title": "연결과 활성화",
-      "start": 6,
-      "duration": 6,
-      "learning_goal": "연결과 활성화",
-      "narration": "각 은닉 뉴런은 가중합 뒤에 ReLU를 적용합니다.",
+      "title": "입력은 무엇일까요?",
+      "start": 8,
+      "duration": 8,
+      "learning_goal": "입력은 무엇일까요?",
+      "narration": "x₁과 x₂는 한 대상의 두 특성입니다.",
       "layers": [
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "explain"
-        },
-        {
-          "id": "l1",
-          "type": "line",
-          "x1": 520,
-          "y1": 285,
-          "x2": 760,
-          "y2": 285,
-          "color": "muted"
-        },
-        {
-          "id": "l2",
-          "type": "line",
-          "x1": 520,
-          "y1": 285,
-          "x2": 760,
-          "y2": 430,
-          "color": "muted"
-        },
-        {
-          "id": "l3",
-          "type": "line",
-          "x1": 520,
-          "y1": 430,
-          "x2": 760,
-          "y2": 285,
-          "color": "muted"
-        },
-        {
-          "id": "l4",
-          "type": "line",
-          "x1": 520,
-          "y1": 430,
-          "x2": 760,
-          "y2": 430,
-          "color": "muted"
-        },
-        {
-          "id": "l5",
-          "type": "line",
-          "x1": 760,
-          "y1": 285,
-          "x2": 1020,
-          "y2": 355,
-          "color": "muted"
-        },
-        {
-          "id": "l6",
-          "type": "line",
-          "x1": 760,
-          "y1": 430,
-          "x2": 1020,
-          "y2": 355,
-          "color": "muted"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "x₁과 x₂는 한 대상의 두 특성입니다."
         },
         {
           "id": "x1node",
           "type": "circle",
-          "x": 520,
-          "y": 285,
-          "r": 37,
-          "fill": "ink",
+          "x": 540,
+          "y": 270,
+          "r": 34,
+          "fill": "surface",
           "color": "blue",
           "width": 4
-        },
-        {
-          "id": "x1nodelabel",
-          "type": "text",
-          "x": 520,
-          "y": 295,
-          "text": "x₁",
-          "size": 30,
-          "color": "blue",
-          "align": "center"
         },
         {
           "id": "x2node",
           "type": "circle",
-          "x": 520,
-          "y": 430,
-          "r": 37,
-          "fill": "ink",
+          "x": 540,
+          "y": 435,
+          "r": 34,
+          "fill": "surface",
           "color": "blue",
           "width": 4
         },
         {
-          "id": "x2nodelabel",
+          "id": "x1label",
           "type": "text",
-          "x": 520,
-          "y": 440,
+          "x": 540,
+          "y": 280,
+          "text": "x₁",
+          "color": "blue",
+          "size": 32,
+          "align": "center"
+        },
+        {
+          "id": "x2label",
+          "type": "text",
+          "x": 540,
+          "y": 445,
           "text": "x₂",
-          "size": 30,
           "color": "blue",
+          "size": 32,
           "align": "center"
         },
         {
-          "id": "h1node",
-          "type": "circle",
-          "x": 760,
-          "y": 285,
-          "r": 37,
-          "fill": "ink",
-          "color": "amber",
-          "width": 4
-        },
-        {
-          "id": "h1nodelabel",
+          "id": "xdesc",
           "type": "text",
-          "x": 760,
-          "y": 295,
-          "text": "h₁",
-          "size": 30,
-          "color": "amber",
-          "align": "center"
+          "x": 680,
+          "y": 275,
+          "text": "예시 입력: x₁ = 2",
+          "color": "foreground",
+          "size": 33
         },
         {
-          "id": "h2node",
-          "type": "circle",
-          "x": 760,
-          "y": 430,
-          "r": 37,
-          "fill": "ink",
-          "color": "amber",
-          "width": 4
-        },
-        {
-          "id": "h2nodelabel",
+          "id": "xdesc2",
           "type": "text",
-          "x": 760,
+          "x": 680,
           "y": 440,
-          "text": "h₂",
-          "size": 30,
-          "color": "amber",
-          "align": "center"
+          "text": "두 번째 특성: x₂ = 1",
+          "color": "foreground",
+          "size": 33
+        }
+      ],
+      "events": [
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "이번 계산에서는 x₁은 2, x₂는 1입니다."
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "stage": "intuition",
+      "title": "연결마다 다른 가중치",
+      "start": 16,
+      "duration": 26,
+      "learning_goal": "연결마다 다른 가중치",
+      "narration": "연결마다 각자의 가중치가 있습니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "연결마다 각자의 가중치가 있습니다."
         },
         {
-          "id": "ynode",
+          "id": "nx1",
           "type": "circle",
-          "x": 1020,
-          "y": 355,
-          "r": 37,
-          "fill": "ink",
+          "x": 500,
+          "y": 250,
+          "r": 34,
+          "fill": "surface",
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "nx2",
+          "type": "circle",
+          "x": 500,
+          "y": 445,
+          "r": 34,
+          "fill": "surface",
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "nh1",
+          "type": "circle",
+          "x": 790,
+          "y": 250,
+          "r": 34,
+          "fill": "surface",
+          "color": "amber",
+          "width": 4
+        },
+        {
+          "id": "nh2",
+          "type": "circle",
+          "x": 790,
+          "y": 445,
+          "r": 34,
+          "fill": "surface",
+          "color": "amber",
+          "width": 4
+        },
+        {
+          "id": "ny",
+          "type": "circle",
+          "x": 1090,
+          "y": 345,
+          "r": 34,
+          "fill": "surface",
           "color": "teal",
           "width": 4
         },
         {
-          "id": "ynodelabel",
+          "id": "lx1",
           "type": "text",
-          "x": 1020,
-          "y": 365,
-          "text": "y",
+          "x": 500,
+          "y": 250,
+          "text": "x₁",
+          "color": "blue",
           "size": 30,
+          "align": "center"
+        },
+        {
+          "id": "lx2",
+          "type": "text",
+          "x": 500,
+          "y": 445,
+          "text": "x₂",
+          "color": "blue",
+          "size": 30,
+          "align": "center"
+        },
+        {
+          "id": "lh1",
+          "type": "text",
+          "x": 790,
+          "y": 250,
+          "text": "h₁",
+          "color": "amber",
+          "size": 30,
+          "align": "center"
+        },
+        {
+          "id": "lh2",
+          "type": "text",
+          "x": 790,
+          "y": 445,
+          "text": "h₂",
+          "color": "amber",
+          "size": 30,
+          "align": "center"
+        },
+        {
+          "id": "ly",
+          "type": "text",
+          "x": 1090,
+          "y": 345,
+          "text": "y",
           "color": "teal",
+          "size": 30,
+          "align": "center"
+        },
+        {
+          "id": "w11",
+          "type": "vector",
+          "x1": 535,
+          "y1": 250,
+          "x2": 755,
+          "y2": 250,
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "w12",
+          "type": "vector",
+          "x1": 530,
+          "y1": 425,
+          "x2": 760,
+          "y2": 270,
+          "color": "rose",
+          "width": 4
+        },
+        {
+          "id": "w21",
+          "type": "vector",
+          "x1": 530,
+          "y1": 270,
+          "x2": 760,
+          "y2": 425,
+          "color": "rose",
+          "width": 4
+        },
+        {
+          "id": "w22",
+          "type": "vector",
+          "x1": 535,
+          "y1": 445,
+          "x2": 755,
+          "y2": 445,
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "o1",
+          "type": "vector",
+          "x1": 825,
+          "y1": 260,
+          "x2": 1055,
+          "y2": 335,
+          "color": "amber",
+          "width": 4
+        },
+        {
+          "id": "o2",
+          "type": "vector",
+          "x1": 825,
+          "y1": 435,
+          "x2": 1055,
+          "y2": 355,
+          "color": "amber",
+          "width": 4
+        },
+        {
+          "id": "inputLayer",
+          "type": "text",
+          "x": 500,
+          "y": 169,
+          "text": "입력층",
+          "color": "blue",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "hiddenLayer",
+          "type": "text",
+          "x": 790,
+          "y": 169,
+          "text": "은닉층",
+          "color": "amber",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "outputLayer",
+          "type": "text",
+          "x": 1090,
+          "y": 169,
+          "text": "출력층",
+          "color": "teal",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "weight_w11",
+          "type": "text",
+          "x": 650,
+          "y": 222,
+          "text": "+1",
+          "color": "blue",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "weight_w12",
+          "type": "text",
+          "x": 600,
+          "y": 419,
+          "text": "−1",
+          "color": "rose",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "weight_w21",
+          "type": "text",
+          "x": 694,
+          "y": 405,
+          "text": "−1",
+          "color": "rose",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "weight_w22",
+          "type": "text",
+          "x": 650,
+          "y": 481,
+          "text": "+2",
+          "color": "blue",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "weight_o1",
+          "type": "text",
+          "x": 943,
+          "y": 265,
+          "text": "+2",
+          "color": "amber",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "weight_o2",
+          "type": "text",
+          "x": 943,
+          "y": 435,
+          "text": "+1",
+          "color": "amber",
+          "size": 25,
           "align": "center"
         }
       ],
       "events": [
         {
           "at": 1,
-          "action": "show",
-          "target": "ynodelabel"
-        },
-        {
-          "at": 1,
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "draw",
+          "target": "w11",
+          "duration": 1
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": "x₁에서 첫 뉴런으로 가는 가중치는 +1입니다."
+        },
+        {
+          "at": 3,
+          "action": "show",
+          "target": "weight_w11"
+        },
+        {
+          "at": 6,
+          "action": "draw",
+          "target": "w12",
+          "duration": 1
+        },
+        {
+          "at": 6,
+          "action": "speak",
+          "target": "teacher",
+          "value": "x₂에서 첫 뉴런으로 가는 가중치는 −1입니다."
+        },
+        {
+          "at": 7,
+          "action": "show",
+          "target": "weight_w12"
+        },
+        {
+          "at": 10,
+          "action": "draw",
+          "target": "w21",
+          "duration": 1
+        },
+        {
+          "at": 10,
+          "action": "speak",
+          "target": "teacher",
+          "value": "x₁에서 둘째 뉴런으로 가는 가중치는 −1입니다."
+        },
+        {
+          "at": 11,
+          "action": "show",
+          "target": "weight_w21"
+        },
+        {
+          "at": 14,
+          "action": "draw",
+          "target": "w22",
+          "duration": 1
+        },
+        {
+          "at": 14,
+          "action": "speak",
+          "target": "teacher",
+          "value": "x₂에서 둘째 뉴런으로 가는 가중치는 +2입니다."
+        },
+        {
+          "at": 15,
+          "action": "show",
+          "target": "weight_w22"
+        },
+        {
+          "at": 18,
+          "action": "draw",
+          "target": "o1",
+          "duration": 1
+        },
+        {
+          "at": 18,
+          "action": "speak",
+          "target": "teacher",
+          "value": "첫 활성값은 출력에 두 배로 전달됩니다."
+        },
+        {
+          "at": 19,
+          "action": "show",
+          "target": "weight_o1"
+        },
+        {
+          "at": 22,
+          "action": "draw",
+          "target": "o2",
+          "duration": 1
+        },
+        {
+          "at": 22,
+          "action": "speak",
+          "target": "teacher",
+          "value": "둘째 활성값은 출력에 한 배로 전달됩니다."
+        },
+        {
+          "at": 23,
+          "action": "show",
+          "target": "weight_o2"
         }
       ]
     },
     {
-      "id": "example",
+      "id": "weights",
       "stage": "example",
-      "title": "숫자로 따라가기",
-      "start": 12,
-      "duration": 6,
-      "learning_goal": "숫자로 따라가기",
-      "narration": "입력 2와 1에서 두 가중합은 각각 1입니다.",
+      "title": "첫 은닉 뉴런의 가중합",
+      "start": 42,
+      "duration": 8,
+      "learning_goal": "첫 은닉 뉴런의 가중합",
+      "narration": "첫 뉴런은 x₁에 1, x₂에 −1을 곱합니다.",
       "layers": [
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "idle"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "첫 뉴런은 x₁에 1, x₂에 −1을 곱합니다."
         },
         {
-          "id": "input",
+          "id": "a",
           "type": "text",
-          "x": 440,
-          "y": 245,
-          "text": "입력 x₁ = 2, x₂ = 1",
-          "size": 36,
-          "color": "blue"
+          "x": 450,
+          "y": 230,
+          "text": "첫 뉴런의 입력 가중합",
+          "color": "amber",
+          "size": 33
         },
         {
-          "id": "calc1",
-          "type": "text",
-          "x": 440,
+          "id": "f",
+          "type": "formula",
+          "x": 450,
           "y": 330,
-          "text": "첫 가중합: 2 − 1 = 1",
-          "size": 34,
-          "color": "amber"
+          "color": "foreground",
+          "size": 35,
+          "tex": "z_1=1\\cdot x_1+(-1)\\cdot x_2+0",
+          "symbols": [
+            "z_1",
+            "x_1",
+            "x_2"
+          ]
         },
         {
-          "id": "calc2",
-          "type": "text",
-          "x": 440,
-          "y": 415,
-          "text": "둘째 가중합: −2 + 2 + 1 = 1",
-          "size": 34,
-          "color": "amber"
+          "id": "v",
+          "type": "formula",
+          "x": 450,
+          "y": 430,
+          "color": "blue",
+          "size": 36,
+          "tex": "=2-1=1",
+          "symbols": []
         }
       ],
       "events": [
         {
           "at": 1,
           "action": "show",
-          "target": "calc2"
+          "target": "f"
         },
         {
-          "at": 1,
-          "action": "gesture",
+          "at": 3,
+          "action": "show",
+          "target": "v"
+        },
+        {
+          "at": 4,
+          "action": "speak",
           "target": "teacher",
-          "value": "point_right"
+          "value": "편향은 0이므로 z₁은 1입니다."
         }
       ]
     },
     {
-      "id": "equation",
-      "stage": "equation",
-      "title": "ReLU와 출력",
-      "start": 18,
-      "duration": 6,
-      "learning_goal": "ReLU와 출력",
-      "narration": "두 활성값은 1이고 최종 출력은 3입니다.",
+      "id": "second",
+      "stage": "example",
+      "title": "둘째 은닉 뉴런의 가중합",
+      "start": 50,
+      "duration": 8,
+      "learning_goal": "둘째 은닉 뉴런의 가중합",
+      "narration": "둘째 뉴런은 다른 가중치와 편향을 가집니다.",
       "layers": [
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "idle"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "둘째 뉴런은 다른 가중치와 편향을 가집니다."
         },
         {
-          "id": "f1",
+          "id": "a",
+          "type": "text",
+          "x": 450,
+          "y": 230,
+          "text": "둘째 뉴런의 입력 가중합",
+          "color": "amber",
+          "size": 33
+        },
+        {
+          "id": "f",
           "type": "formula",
-          "x": 440,
-          "y": 240,
-          "tex": "h_1=\\mathrm{ReLU}(x_1-x_2)",
+          "x": 450,
+          "y": 330,
+          "color": "foreground",
+          "size": 35,
+          "tex": "z_2=(-1)\\cdot x_1+2\\cdot x_2+1",
+          "symbols": [
+            "z_2",
+            "x_1",
+            "x_2"
+          ]
+        },
+        {
+          "id": "v",
+          "type": "formula",
+          "x": 450,
+          "y": 430,
+          "color": "blue",
+          "size": 36,
+          "tex": "=-2+2+1=1",
+          "symbols": []
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "f"
+        },
+        {
+          "at": 3,
+          "action": "show",
+          "target": "v"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "마지막 1은 입력과 무관하게 더하는 편향입니다."
+        }
+      ]
+    },
+    {
+      "id": "relu1",
+      "stage": "equation",
+      "title": "첫 뉴런의 ReLU",
+      "start": 58,
+      "duration": 8,
+      "learning_goal": "첫 뉴런의 ReLU",
+      "narration": "ReLU는 음수면 0, 양수면 그대로 둡니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "ReLU는 음수면 0, 양수면 그대로 둡니다."
+        },
+        {
+          "id": "rule",
+          "type": "formula",
+          "x": 450,
+          "y": 245,
+          "color": "foreground",
+          "size": 38,
+          "tex": "\\mathrm{ReLU}(z)=\\max(0,z)",
+          "symbols": [
+            "z"
+          ]
+        },
+        {
+          "id": "formula",
+          "type": "formula",
+          "x": 450,
+          "y": 350,
+          "color": "amber",
+          "size": 34,
+          "tex": "h_1=\\mathrm{ReLU}(z_1)=\\max(0,1)",
           "symbols": [
             "h_1",
-            "x_1",
-            "x_2"
-          ],
-          "size": 34,
-          "color": "white"
+            "z_1"
+          ]
         },
         {
-          "id": "f2",
+          "id": "value",
           "type": "formula",
-          "x": 440,
-          "y": 320,
-          "tex": "h_2=\\mathrm{ReLU}(-x_1+2x_2+1)",
+          "x": 450,
+          "y": 445,
+          "color": "blue",
+          "size": 38,
+          "tex": "h_1=1",
+          "symbols": [
+            "h_1"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "rule"
+        },
+        {
+          "at": 3,
+          "action": "show",
+          "target": "formula"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "첫 가중합 1은 양수이므로 h₁은 1입니다."
+        },
+        {
+          "at": 5,
+          "action": "show",
+          "target": "value"
+        }
+      ]
+    },
+    {
+      "id": "activation_curve",
+      "stage": "equation",
+      "title": "ReLU가 음수를 자르는 모양",
+      "duration": 10,
+      "learning_goal": "음수 입력과 양수 입력에 대한 ReLU의 결과를 그래프에서 구별한다.",
+      "narration": "가로축은 ReLU의 입력 z이고, 세로축은 출력입니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "idle"
+        },
+        {
+          "id": "xaxis",
+          "type": "vector",
+          "x1": 533,
+          "y1": 490,
+          "x2": 1110,
+          "y2": 490,
+          "color": "muted",
+          "width": 2.5
+        },
+        {
+          "id": "yaxis",
+          "type": "vector",
+          "x1": 806,
+          "y1": 535,
+          "x2": 806,
+          "y2": 210,
+          "color": "muted",
+          "width": 2.5
+        },
+        {
+          "id": "xin",
+          "type": "text",
+          "x": 1100,
+          "y": 526,
+          "text": "입력 z",
+          "color": "muted",
+          "size": 24,
+          "align": "center"
+        },
+        {
+          "id": "out",
+          "type": "text",
+          "x": 806,
+          "y": 177,
+          "text": "ReLU 출력",
+          "color": "muted",
+          "size": 24,
+          "align": "center"
+        },
+        {
+          "id": "zero",
+          "type": "polyline",
+          "points": [
+            [
+              545,
+              490
+            ],
+            [
+              660,
+              490
+            ],
+            [
+              806,
+              490
+            ]
+          ],
+          "color": "rose",
+          "width": 5
+        },
+        {
+          "id": "positive",
+          "type": "polyline",
+          "points": [
+            [
+              806,
+              490
+            ],
+            [
+              940,
+              356
+            ],
+            [
+              1070,
+              226
+            ]
+          ],
+          "color": "teal",
+          "width": 5
+        },
+        {
+          "id": "zero_label",
+          "type": "text",
+          "x": 655,
+          "y": 454,
+          "text": "음수 → 0",
+          "color": "rose",
+          "size": 26,
+          "align": "center"
+        },
+        {
+          "id": "pos_label",
+          "type": "text",
+          "x": 1080,
+          "y": 367,
+          "text": "양수 → 그대로",
+          "color": "teal",
+          "size": 25,
+          "align": "center"
+        },
+        {
+          "id": "origin",
+          "type": "text",
+          "x": 780,
+          "y": 520,
+          "text": "0",
+          "color": "muted",
+          "size": 22,
+          "align": "center"
+        }
+      ],
+      "events": [
+        {
+          "at": 0.5,
+          "action": "draw",
+          "target": "xaxis",
+          "duration": 1
+        },
+        {
+          "at": 0.5,
+          "action": "draw",
+          "target": "yaxis",
+          "duration": 1
+        },
+        {
+          "at": 1.5,
+          "action": "show",
+          "target": "xin"
+        },
+        {
+          "at": 1.5,
+          "action": "show",
+          "target": "out"
+        },
+        {
+          "at": 1.5,
+          "action": "show",
+          "target": "origin"
+        },
+        {
+          "at": 2,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": "입력이 음수인 구간은 출력이 0이라 가로로 이어집니다."
+        },
+        {
+          "at": 2,
+          "action": "draw",
+          "target": "zero",
+          "duration": 1.4
+        },
+        {
+          "at": 3.4,
+          "action": "show",
+          "target": "zero_label"
+        },
+        {
+          "at": 5.5,
+          "action": "speak",
+          "target": "teacher",
+          "value": "입력이 양수이면 출력도 같은 값이라 대각선으로 올라갑니다."
+        },
+        {
+          "at": 5.5,
+          "action": "draw",
+          "target": "positive",
+          "duration": 1.6
+        },
+        {
+          "at": 7.1,
+          "action": "show",
+          "target": "pos_label"
+        }
+      ],
+      "start": 66
+    },
+    {
+      "id": "relu2",
+      "stage": "equation",
+      "title": "둘째 뉴런의 ReLU",
+      "start": 76,
+      "duration": 8,
+      "learning_goal": "둘째 뉴런의 ReLU",
+      "narration": "둘째 뉴런에도 같은 ReLU를 적용합니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "둘째 뉴런에도 같은 ReLU를 적용합니다."
+        },
+        {
+          "id": "formula",
+          "type": "formula",
+          "x": 450,
+          "y": 270,
+          "color": "amber",
+          "size": 34,
+          "tex": "h_2=\\mathrm{ReLU}(z_2)=\\max(0,1)",
           "symbols": [
             "h_2",
-            "x_1",
-            "x_2"
-          ],
-          "size": 34,
-          "color": "white"
+            "z_2"
+          ]
         },
         {
-          "id": "f3",
+          "id": "value",
           "type": "formula",
-          "x": 440,
-          "y": 400,
-          "tex": "y=2h_1+h_2=3",
+          "x": 450,
+          "y": 385,
+          "color": "blue",
+          "size": 38,
+          "tex": "h_2=1",
+          "symbols": [
+            "h_2"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "formula"
+        },
+        {
+          "at": 3,
+          "action": "show",
+          "target": "value"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "둘째 가중합도 1이므로 h₂는 1입니다."
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "stage": "equation",
+      "title": "출력 뉴런 계산",
+      "start": 84,
+      "duration": 8,
+      "learning_goal": "출력 뉴런 계산",
+      "narration": "출력은 두 활성값의 가중합입니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "출력은 두 활성값의 가중합입니다."
+        },
+        {
+          "id": "f",
+          "type": "formula",
+          "x": 450,
+          "y": 260,
+          "color": "teal",
+          "size": 39,
+          "tex": "y=2h_1+h_2",
           "symbols": [
             "y",
             "h_1",
             "h_2"
-          ],
-          "size": 34,
-          "color": "white"
+          ]
         },
         {
-          "id": "relu",
+          "id": "v",
+          "type": "formula",
+          "x": 450,
+          "y": 370,
+          "color": "foreground",
+          "size": 38,
+          "tex": "=2\\cdot 1+1=3",
+          "symbols": []
+        },
+        {
+          "id": "note",
           "type": "text",
-          "x": 440,
-          "y": 480,
-          "text": "ReLU(z) = max(0, z)",
-          "size": 30,
-          "color": "teal"
+          "x": 450,
+          "y": 470,
+          "text": "이 예의 출력 편향은 0입니다.",
+          "color": "foreground",
+          "size": 28
         }
       ],
       "events": [
         {
           "at": 1,
           "action": "show",
-          "target": "relu"
+          "target": "f"
         },
         {
-          "at": 1,
-          "action": "gesture",
+          "at": 3,
+          "action": "show",
+          "target": "v"
+        },
+        {
+          "at": 4,
+          "action": "speak",
           "target": "teacher",
-          "value": "point_right"
+          "value": "첫 활성값은 두 배, 둘째는 한 배로 합칩니다."
         }
       ]
     },
     {
       "id": "insight",
       "stage": "insight",
-      "title": "입력을 바꾸어 보기",
-      "start": 24,
-      "duration": 6,
-      "learning_goal": "입력을 바꾸어 보기",
-      "narration": "첫 입력을 바꾸면 활성값과 출력이 함께 바뀝니다.",
+      "title": "입력을 직접 바꾸기",
+      "start": 92,
+      "duration": 8,
+      "learning_goal": "입력을 직접 바꾸기",
+      "narration": "슬라이더로 x₁을 바꾸면 계산이 다시 실행됩니다.",
       "layers": [
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "explain"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "슬라이더로 x₁을 바꾸면 계산이 다시 실행됩니다."
         },
         {
-          "id": "i1",
+          "id": "fixed",
           "type": "text",
-          "x": 440,
-          "y": 245,
+          "x": 450,
+          "y": 205,
           "text": "x₂ = 1, 가중치와 편향은 고정",
-          "size": 30,
-          "color": "muted"
+          "color": "foreground",
+          "size": 27
         },
         {
           "id": "ih1",
           "type": "text",
-          "x": 440,
-          "y": 325,
+          "x": 450,
+          "y": 290,
           "text": "h₁ = 1",
-          "size": 34,
-          "color": "amber",
+          "color": "blue",
+          "size": 32,
           "bind": {
             "text": [
               "concat",
@@ -463,11 +1155,11 @@
         {
           "id": "ih2",
           "type": "text",
-          "x": 440,
-          "y": 390,
+          "x": 450,
+          "y": 365,
           "text": "h₂ = 1",
-          "size": 34,
           "color": "amber",
+          "size": 32,
           "bind": {
             "text": [
               "concat",
@@ -491,11 +1183,11 @@
         {
           "id": "iy",
           "type": "text",
-          "x": 440,
-          "y": 465,
+          "x": 450,
+          "y": 440,
           "text": "y = 3",
-          "size": 38,
           "color": "teal",
+          "size": 34,
           "bind": {
             "text": [
               "concat",
@@ -536,7 +1228,7 @@
           "id": "bar_h1",
           "type": "rect",
           "x": 820,
-          "y": 305,
+          "y": 267,
           "w": 40,
           "h": 22,
           "fill": "blue",
@@ -561,7 +1253,7 @@
           "id": "bar_h2",
           "type": "rect",
           "x": 820,
-          "y": 370,
+          "y": 342,
           "w": 40,
           "h": 22,
           "fill": "amber",
@@ -590,7 +1282,7 @@
           "id": "bar_y",
           "type": "rect",
           "x": 820,
-          "y": 445,
+          "y": 417,
           "w": 120,
           "h": 22,
           "fill": "teal",
@@ -632,26 +1324,21 @@
           }
         },
         {
-          "id": "example_note",
+          "id": "example",
           "type": "text",
-          "x": 440,
-          "y": 535,
-          "text": "예: x₁ = 4이면 y = 6 (기본값은 3)",
-          "size": 24,
-          "color": "muted"
+          "x": 450,
+          "y": 520,
+          "text": "x₁ = 4이면 y = 6입니다.",
+          "color": "foreground",
+          "size": 26
         }
       ],
       "events": [
         {
-          "at": 1,
-          "action": "show",
-          "target": "iy"
-        },
-        {
-          "at": 1,
-          "action": "gesture",
+          "at": 4,
+          "action": "speak",
           "target": "teacher",
-          "value": "point_right"
+          "value": "막대와 값은 같은 계산 결과를 보여 줍니다."
         }
       ],
       "interactions": [
@@ -666,51 +1353,212 @@
       ]
     },
     {
-      "id": "recap",
-      "stage": "recap",
-      "title": "순전파의 순서",
-      "start": 30,
-      "duration": 6,
-      "learning_goal": "순전파의 순서",
-      "narration": "가중합과 ReLU를 거쳐 출력 가중합을 계산합니다.",
+      "id": "negative",
+      "stage": "insight",
+      "title": "음수 가중합과 ReLU",
+      "start": 100,
+      "duration": 8,
+      "learning_goal": "음수 가중합과 ReLU",
+      "narration": "x₁을 0으로 놓으면 첫 가중합은 음수입니다.",
       "layers": [
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "idle"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "x₁을 0으로 놓으면 첫 가중합은 음수입니다."
         },
         {
-          "id": "steps",
+          "id": "n1",
           "type": "text",
-          "x": 440,
-          "y": 285,
-          "text": "입력 → 가중합과 편향 → ReLU → 출력",
-          "size": 34,
-          "color": "teal"
+          "x": 450,
+          "y": 245,
+          "text": "x₁ = 0, x₂ = 1",
+          "color": "blue",
+          "size": 34
         },
         {
-          "id": "note",
+          "id": "n2",
           "type": "text",
-          "x": 440,
-          "y": 410,
-          "text": "여기서는 학습이 아닌 순전파를 살펴봤습니다.",
-          "size": 28,
-          "color": "white"
+          "x": 450,
+          "y": 325,
+          "text": "z₁ = 0 − 1 = −1  →  h₁ = 0",
+          "color": "amber",
+          "size": 33
+        },
+        {
+          "id": "n3",
+          "type": "text",
+          "x": 450,
+          "y": 405,
+          "text": "z₂ = 0 + 2 + 1 = 3  →  h₂ = 3",
+          "color": "amber",
+          "size": 33
+        },
+        {
+          "id": "n4",
+          "type": "text",
+          "x": 450,
+          "y": 485,
+          "text": "y = 2 × 0 + 3 = 3",
+          "color": "teal",
+          "size": 33
         }
       ],
       "events": [
         {
-          "at": 1,
+          "at": 1.5,
           "action": "show",
-          "target": "note"
+          "target": "n2"
         },
         {
-          "at": 1,
-          "action": "gesture",
+          "at": 3.5,
+          "action": "show",
+          "target": "n3"
+        },
+        {
+          "at": 4,
+          "action": "speak",
           "target": "teacher",
-          "value": "point_right"
+          "value": "ReLU가 −1을 0으로 바꾸고 둘째 값은 남깁니다."
+        },
+        {
+          "at": 5.5,
+          "action": "show",
+          "target": "n4"
+        }
+      ]
+    },
+    {
+      "id": "scope",
+      "stage": "insight",
+      "title": "출력과 학습의 범위",
+      "start": 108,
+      "duration": 8,
+      "learning_goal": "출력과 학습의 범위",
+      "narration": "여기서는 출력에 별도 활성화 함수를 쓰지 않습니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "여기서는 출력에 별도 활성화 함수를 쓰지 않습니다."
+        },
+        {
+          "id": "s1",
+          "type": "text",
+          "x": 450,
+          "y": 270,
+          "text": "출력: y = 2h₁ + h₂",
+          "color": "teal",
+          "size": 36
+        },
+        {
+          "id": "s2",
+          "type": "text",
+          "x": 450,
+          "y": 370,
+          "text": "출력 활성화는 항등 함수입니다.",
+          "color": "foreground",
+          "size": 30
+        },
+        {
+          "id": "s3",
+          "type": "text",
+          "x": 450,
+          "y": 455,
+          "text": "가중치와 편향은 이미 주어진 값입니다.",
+          "color": "foreground",
+          "size": 30
+        }
+      ],
+      "events": [
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "가중치를 조정하는 학습은 이 예의 범위 밖입니다."
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "stage": "recap",
+      "title": "순전파 되짚기",
+      "start": 116,
+      "duration": 8,
+      "learning_goal": "순전파 되짚기",
+      "narration": "입력에서 가중합, ReLU, 출력으로 이어집니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "입력에서 가중합, ReLU, 출력으로 이어집니다."
+        },
+        {
+          "id": "r1",
+          "type": "text",
+          "x": 450,
+          "y": 245,
+          "text": "입력 특성 x₁, x₂",
+          "color": "blue",
+          "size": 34
+        },
+        {
+          "id": "r2",
+          "type": "text",
+          "x": 450,
+          "y": 325,
+          "text": "→ 가중합과 편향 z₁, z₂",
+          "color": "amber",
+          "size": 34
+        },
+        {
+          "id": "r3",
+          "type": "text",
+          "x": 450,
+          "y": 405,
+          "text": "→ ReLU 활성값 h₁, h₂",
+          "color": "amber",
+          "size": 34
+        },
+        {
+          "id": "r4",
+          "type": "text",
+          "x": 450,
+          "y": 485,
+          "text": "→ 출력 y",
+          "color": "teal",
+          "size": 34
+        }
+      ],
+      "events": [
+        {
+          "at": 1.5,
+          "action": "show",
+          "target": "r2"
+        },
+        {
+          "at": 3.5,
+          "action": "show",
+          "target": "r3"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "한 번의 계산을 순전파라고 부릅니다."
+        },
+        {
+          "at": 5.5,
+          "action": "show",
+          "target": "r4"
         }
       ]
     }
@@ -724,7 +1572,7 @@
       "kind": "sample",
       "scene": "insight",
       "inputs": {
-        "x1": 2
+        "x1": 0
       },
       "actual": [
         "add",
@@ -761,7 +1609,7 @@
       "kind": "sample",
       "scene": "insight",
       "inputs": {
-        "x1": 0
+        "x1": 2
       },
       "actual": [
         "add",

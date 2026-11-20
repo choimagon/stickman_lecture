@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MathScene</title>
+  <title>스틱맨렉처</title>
   <link rel="stylesheet" href="vendor/katex.min.css">
   <link rel="stylesheet" href="style.css">
   <script defer src="vendor/katex.min.js"></script>
@@ -15,11 +15,12 @@
 <body>
   <main>
     <header class="masthead">
-      <span class="brand">Math<span>Scene</span></span>
+      <span class="brand">스틱맨<span>렉처</span></span>
       <h1 id="title"></h1>
     </header>
     <div class="workspace">
       <section class="viewer" aria-label="강의 플레이어">
+        <p class="speech" id="stage-description" aria-live="polite"></p>
         <div class="stage" id="stage" role="img" aria-labelledby="stage-description">
           <div class="stage-header"><div id="scene-title"></div><div id="stage-count"></div></div>
           <svg id="math"></svg><canvas id="stick" aria-hidden="true"></canvas>
@@ -32,7 +33,6 @@
           <input type="range" id="seek" min="0" value="0">
           <output id="clock"></output>
         </div>
-        <p class="caption" id="stage-description" aria-live="polite"></p>
         <div id="sliders" hidden></div>
       </section>
       <aside aria-label="강의 목차">

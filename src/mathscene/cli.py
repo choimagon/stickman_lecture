@@ -1,4 +1,4 @@
-"""MathScene CLI and export orchestration."""
+"""Stickman Lecture CLI and export orchestration."""
 import argparse
 import importlib.util
 import json
@@ -109,9 +109,19 @@ def timestamp(seconds):
     return f"{hours:02}:{minutes:02}:{seconds:02},{milli:03}"
 
 
-def write_srt(lesson, path):
-    entries = [f"{i}\n{timestamp(s['start'])} --> {timestamp(s['start'] + s['duration'])}\n{s['narration']}"
-               for i, s in enumerate(lesson["scenes"], 1)]
+def write_srt(segments, fps, path):
+    spans = []
+    elapsed = 0
+    for segment in segments:
+        end = elapsed + segment["frames"]
+        spoken = segment["speech"]
+        if spans and spans[-1][1] == elapsed and spans[-1][2] == spoken:
+            spans[-1] = (spans[-1][0], end, spoken)
+        elif spoken:
+            spans.append((elapsed, end, spoken))
+        elapsed = end
+    entries = [f"{i}\n{timestamp(start / fps)} --> {timestamp(end / fps)}\n{spoken}"
+               for i, (start, end, spoken) in enumerate(spans, 1)]
     path.write_text("\n\n".join(entries) + "\n", encoding="utf-8")
 
 
@@ -151,15 +161,17 @@ def build_video(lesson, scene_file, node, home, work, preview, audio):
     reel = work / "video-frames"
     reel.mkdir()
     for i, scene in enumerate(lesson["scenes"]):
-        time = scene["start"] + scene["duration"] * .72
+        time = scene["start"] + scene["duration"] * .94
         path = reel / f"{i + 1:02}-{scene['id']}.png"
         run(f"frame-{i + 1:02}", [ffmpeg, "-v", "error", "-y", "-ss", str(time), "-i", str(lesson_video),
                                   "-frames:v", "1", str(path)], work)
         if i == min(2, len(lesson["scenes"]) - 1):
             shutil.copyfile(path, work / "video-preview.png")
-    write_srt(lesson, work / "captions.srt")
+    segments = json.loads((work / "segments.json").read_text(encoding="utf-8"))["segments"]
+    write_srt(segments, fps, work / "captions.srt")
+    animated_frames = sum(part["frames"] for part in segments if any("drawFrames" in layer for layer in part["layers"]))
     return {**report, "overlay": alpha, "motion": json.loads((work / "motion.json").read_text()),
-            "decoded": True, "screenshots": len(lesson["scenes"])}
+            "drawFrames": animated_frames, "decoded": True, "screenshots": len(lesson["scenes"])}
 
 
 def storyboard(lesson, source_path, dest):
@@ -268,7 +280,7 @@ def validate(args):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="mathscene", description=__doc__)
+    parser = argparse.ArgumentParser(prog="stickman-lecture", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     diagnostic = commands.add_parser("doctor", help="check Node, Chromium and optional video dependencies")
     diagnostic.add_argument("--video", action="store_true", help="require video dependencies")
@@ -288,7 +300,7 @@ def main(argv=None):
     try:
         return {"doctor": doctor, "validate": validate, "render": render}[args.command](args)
     except (SceneError, RenderError, OSError) as exc:
-        print(f"mathscene: {exc}", file=sys.stderr)
+        print(f"stickman-lecture: {exc}", file=sys.stderr)
         return 1
 
 

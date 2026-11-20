@@ -2,7 +2,7 @@ import {createRequire} from "node:module";
 import {createServer} from "node:http";
 import {spawn} from "node:child_process";
 import {once} from "node:events";
-import {readFile, writeFile, mkdir} from "node:fs/promises";
+import {readFile, writeFile} from "node:fs/promises";
 import {dirname, extname, join, resolve, sep} from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
 import "./web/core.js";
@@ -10,7 +10,7 @@ import "./web/core.js";
 const [command, dependencyDir, ...args] = process.argv.slice(2);
 const require = createRequire(join(dependencyDir, "package.json"));
 const resources = dirname(fileURLToPath(import.meta.url));
-const {palette, state, gaussianPoints, arrowPoints} = MathScene;
+const {paletteFor, state, geometry, speech} = MathScene;
 
 async function prepare(sceneFile, work) {
   const {mathjax} = require("mathjax-full/js/mathjax.js");
@@ -28,13 +28,27 @@ async function prepare(sceneFile, work) {
   const formulas = new Map();
   const segments = [];
   for (const scene of lesson.scenes) {
-    const points = [...new Set([0, ...scene.events.map(e => Math.round(e.at * fps)), Math.round(scene.duration * fps)])];
+    const ends = scene.events.filter(e => e.action === "draw").map(e => Math.round((e.at + e.duration) * fps));
+    const points = [...new Set([0, ...scene.events.map(e => Math.round(e.at * fps)),
+      ...ends, Math.round(scene.duration * fps)])].sort((a, b) => a - b);
     for (let i = 0; i < points.length - 1; i++) {
-      const {index, layers} = state(lesson, scene.start + points[i] / fps);
+      const current = state(lesson, scene.start + points[i] / fps);
+      const {index, layers} = current;
+      const frames = points[i + 1] - points[i];
       const math = [];
       for (const source of layers) {
-        const layer = {...source};
-        if (layer.type === "stick") continue;
+        if (source.type === "stick") continue;
+        const layer = {...geometry(source, {complete: true})};
+        if (source.progress !== undefined && source.progress < 1 - 1e-7) {
+          const draw = scene.events.find(e => e.action === "draw" && e.target === layer.id);
+          const runFrames = Math.round(draw.duration * fps);
+          layer.drawFrames = Array.from({length: frames}, (_, frame) => {
+            const snapshot = geometry({...source, progress: source.progress + frame / runFrames});
+            if (!snapshot) return null;
+            if (snapshot.points) return {type: snapshot.type, points: snapshot.points};
+            return {x2: snapshot.x2, y2: snapshot.y2, arrow: snapshot.arrow};
+          });
+        }
         if (layer.type === "formula") {
           if (!formulas.has(layer.tex)) {
             const name = "formula-" + formulas.size + ".svg";
@@ -47,14 +61,13 @@ async function prepare(sceneFile, work) {
           }
           Object.assign(layer, formulas.get(layer.tex));
         }
-        if (layer.type === "gaussian") layer.points = gaussianPoints(layer);
-        if (layer.type === "vector") layer.arrow = arrowPoints(layer, layer.width ?? 2.5);
         math.push(layer);
       }
-      segments.push({scene: index, frames: points[i + 1] - points[i], layers: math});
+      const spoken = scene.layers.some(layer => layer.type === "stick") ? speech(current) : scene.narration;
+      segments.push({scene: index, frames, speech: spoken, layers: math});
     }
   }
-  await writeFile(join(work, "segments.json"), JSON.stringify({lesson, palette, segments}));
+  await writeFile(join(work, "segments.json"), JSON.stringify({lesson, palette: paletteFor(lesson.theme), segments}));
 }
 
 async function launch() {
@@ -71,7 +84,8 @@ function checkMotion(report, lesson, index, overlay, previous, fps) {
         throw Error("stick joint outside safe stage in " + index + "/" + figure.id);
       }
     }
-    if (figure.bubble && (figure.bubble.left < 4 || figure.bubble.right > width - 4 || figure.bubble.top < 116)) {
+    if (figure.bubble && (figure.bubble.left < 4 || figure.bubble.right > width - 4 ||
+        figure.bubble.top < height * .162 || figure.bubble.bottom > height - 4)) {
       throw Error("speech bubble outside safe stage in " + index + "/" + figure.id);
     }
     const before = previous?.index === index && previous.overlay.figures.find(f => f.id === figure.id);
@@ -86,7 +100,6 @@ function checkMotion(report, lesson, index, overlay, previous, fps) {
       }
     }
   }
-  if (overlay.caption?.top < 120 || overlay.caption?.lines > 3) throw Error("caption is too long in scene " + index);
 }
 
 async function capture(sceneFile, work, w, h, ffmpeg) {
@@ -94,7 +107,7 @@ async function capture(sceneFile, work, w, h, ffmpeg) {
   const {fps} = lesson.canvas;
   const count = Math.round(lesson.duration * fps);
   const browser = await launch();
-  const report = {frames: count, maxJointPixelsPerFrame: 0, maxFootPixelsPerFrame: 0};
+  const report = {frames: count, maxJointPixelsPerFrame: 0, maxFootPixelsPerFrame: 0, speechFrames: 0};
   let encoder;
   let encoderResult;
   try {
@@ -124,6 +137,7 @@ async function capture(sceneFile, work, w, h, ffmpeg) {
       }, {start, stop: Math.min(start + 12, count), fps});
       for (const frame of batch) {
         checkMotion(report, lesson, frame.index, frame.overlay, previous, fps);
+        if (frame.overlay.figures.some(figure => figure.bubble)) report.speechFrames++;
         previous = {index: frame.index, overlay: frame.overlay};
         if (encoder.stdin.destroyed) throw Error("overlay encoder closed before all frames arrived");
         if (!encoder.stdin.write(Buffer.from(frame.png, "base64"))) {
@@ -173,7 +187,7 @@ async function serve(root) {
 async function verify(web, work, preview) {
   const {server, url} = await serve(resolve(web));
   let browser;
-  const report = {viewports: [], samples: 0, controls: 0, overlapWarnings: []};
+  const report = {viewports: [], samples: 0, controls: 0, drawChecks: 0, speechChecks: 0, overlapWarnings: []};
   try {
     browser = await launch();
     for (const viewport of [{width: 1440, height: 920}, {width: 390, height: 844}]) {
@@ -191,13 +205,17 @@ async function verify(web, work, preview) {
         const scene = info.scenes[i];
         await steps.nth(i).click();
         if (await steps.nth(i).getAttribute("aria-current") !== "step") throw Error("stage button did not seek");
-        const times = [0, ...scene.events.map(e => e.at), Math.max(0, scene.duration - 1 / info.canvas.fps)];
+        const lastFrame = Math.max(0, scene.duration - 1 / info.canvas.fps);
+        const draws = scene.events.filter(e => e.action === "draw");
+        const drawTimes = draws.flatMap(e =>
+          [e.at + e.duration / 2, Math.min(e.at + e.duration, lastFrame)]);
+        const times = [0, ...scene.events.map(e => e.at), ...drawTimes, lastFrame].sort((a, b) => a - b);
         for (const local of new Set(times)) {
           const measured = await page.evaluate(time => {
             mathscenePlayer.seek(time);
             const stage = document.querySelector("#stage").getBoundingClientRect();
             const header = document.querySelector(".stage-header").getBoundingClientRect();
-            const labels = Array.from(document.querySelectorAll("#math > [data-layer]")).map(el => {
+            const labels = Array.from(document.querySelectorAll("#math > [data-layer]:not([visibility=hidden])")).map(el => {
               const rect = (el.querySelector(".formula-box > span") ?? el).getBoundingClientRect();
               return {id: el.dataset.layer, type: el.dataset.type, left: rect.left, right: rect.right,
                 top: rect.top, bottom: rect.bottom};
@@ -212,12 +230,43 @@ async function verify(web, work, preview) {
               if (Math.min(p.right, q.right) - Math.max(p.left, q.left) > 3 &&
                   Math.min(p.bottom, q.bottom) - Math.max(p.top, q.top) > 3) overlaps.push(p.id + "/" + q.id);
             }
+            const {width, height} = MATHSCENE_LESSON.canvas;
+            for (const figure of mathscenePlayer.overlay.figures) {
+              if (!figure.bubble) continue;
+              const bubble = figure.bubble;
+              const left = stage.left + bubble.left * stage.width / width;
+              const right = stage.left + bubble.right * stage.width / width;
+              const top = stage.top + bubble.top * stage.height / height;
+              const bottom = stage.top + bubble.bottom * stage.height / height;
+              for (const label of text) {
+                if (Math.min(right, label.right) - Math.max(left, label.left) > 3 &&
+                    Math.min(bottom, label.bottom) - Math.max(top, label.top) > 3) outside.push("speech/" + label.id);
+              }
+            }
             const overflow = document.documentElement.scrollWidth > window.innerWidth + 1;
-            return {outside, overlaps, overflow, overlay: mathscenePlayer.overlay, index: mathscenePlayer.state.index};
+            const drawing = Object.fromEntries(Array.from(document.querySelectorAll("#math > [data-layer]"))
+              .map(el => [el.dataset.layer, Number(el.dataset.progress)]));
+            const spoken = document.getElementById("stage-description").textContent;
+            return {outside, overlaps, overflow, drawing, spoken,
+              overlay: mathscenePlayer.overlay, index: mathscenePlayer.state.index};
           }, scene.start + local);
           report.samples++;
           if (measured.index !== i) throw Error("scene time mapping failed for " + scene.id);
           if (measured.outside.length || measured.overflow) throw Error("clipped content in " + scene.id + ": " + measured.outside.join(", "));
+          for (const draw of draws.filter(e => Math.abs(e.at + e.duration / 2 - local) < 1e-7)) {
+            const expected = mobile ? 1 : .5;
+            const progress = measured.drawing[draw.target];
+            if (!Number.isFinite(progress) || Math.abs(progress - expected) > 1e-5) {
+              throw Error("draw progress did not reach " + expected + " for " + scene.id + "/" + draw.target);
+            }
+            report.drawChecks++;
+          }
+          const spokenNow = new Map(scene.events.filter(e => e.action === "speak" && Math.abs(e.at - local) < 1e-7)
+            .map(e => [e.target, e.value]));
+          for (const [target, text] of spokenNow) {
+            if (text && !measured.spoken.includes(text)) throw Error("speech was not updated for " + scene.id + "/" + target);
+            report.speechChecks++;
+          }
           checkMotion({maxJointPixelsPerFrame: 0, maxFootPixelsPerFrame: 0}, info, i, measured.overlay, null, info.canvas.fps);
           report.overlapWarnings.push(...measured.overlaps.map(pair => scene.id + "/" + pair));
         }
@@ -246,8 +295,8 @@ async function verify(web, work, preview) {
           report.controls++;
         }
         const mode = mobile ? "mobile" : "desktop";
-        await page.locator("#stage").screenshot({path: join(work, mode + "-" + scene.id + ".png")});
-        if (!mobile && i === Math.min(2, info.scenes.length - 1)) await page.screenshot({path: preview});
+        await page.locator(mobile ? ".viewer" : "#stage").screenshot({path: join(work, mode + "-" + scene.id + ".png")});
+        if (!mobile && i === Math.min(2, info.scenes.length - 1)) await page.screenshot({path: preview, fullPage: true});
       }
       await steps.first().click();
       await page.locator("h1").click();

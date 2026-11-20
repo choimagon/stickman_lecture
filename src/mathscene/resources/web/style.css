@@ -27,8 +27,9 @@ button:disabled { opacity: .4; cursor: default; }
 input[type="range"] { min-width: 0; accent-color: #72dfca; }
 #seek { flex: 1; }
 #clock { font: 12px ui-monospace,monospace; white-space: nowrap; color: #a4b2cc; }
-.caption { padding: 0 15px; margin: 14px 0; line-height: 1.65; overflow-wrap: anywhere; }
-#sliders { margin: 0 14px 14px; padding: 12px; background: #0c1425; border: 1px solid #31415e; border-radius: 9px; }
+.speech { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.speech:empty { display: none; }
+#sliders { margin: 14px; padding: 12px; background: #0c1425; border: 1px solid #31415e; border-radius: 9px; }
 .slider { display: grid; grid-template-columns: minmax(5ch, 1fr) minmax(0, 3fr) 5ch; gap: 8px; align-items: center; }
 .slider + .slider { margin-top: 10px; }
 .slider output { color: #72dfca; font: 14px ui-monospace,monospace; }
@@ -43,5 +44,29 @@ summary { cursor: pointer; }
 dt { color: #f5f7ff; font-weight: 650; }
 dd { margin: 2px 0 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
-@media (max-width: 760px) { .workspace { grid-template-columns: minmax(0,1fr); } #steps { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+[data-theme="stick-studio"] { color-scheme: light; color: #141414; background: #fbfaf7; }
+[data-theme="stick-studio"] .brand, [data-theme="stick-studio"] dt { color: #141414; }
+[data-theme="stick-studio"] .brand span { color: #865608; }
+[data-theme="stick-studio"] .viewer, [data-theme="stick-studio"] aside { background: #fff; border-color: #e3e0d8; }
+[data-theme="stick-studio"] .stage { background: #fff; }
+[data-theme="stick-studio"] .stage::after { border-color: #e6e4dd; }
+[data-theme="stick-studio"] #stage-count, [data-theme="stick-studio"] .slider output { color: #146b56; }
+[data-theme="stick-studio"] .transport { border-color: #e6e4dd; background: #fcfbf8; }
+[data-theme="stick-studio"] button { border-color: #dfdcd3; background: #fff; }
+[data-theme="stick-studio"] button:hover, [data-theme="stick-studio"] button:focus-visible { border-color: #9b781b; }
+[data-theme="stick-studio"] #play { background: #f6d365; color: #141414; border-color: #c5a03c; }
+[data-theme="stick-studio"] input[type="range"] { accent-color: #946202; }
+[data-theme="stick-studio"] #clock, [data-theme="stick-studio"] #steps button span, [data-theme="stick-studio"] details { color: #615d55; }
+[data-theme="stick-studio"] #steps button[aria-current="step"] { border-color: #d8bd69; background: #fdf3d1; }
+[data-theme="stick-studio"] #sliders { background: #fbfaf7; border-color: #e3e0d8; }
+@media (max-width: 760px) {
+  .workspace { grid-template-columns: minmax(0,1fr); }
+  #steps { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .speech { position: relative; width: auto; height: auto; overflow: visible; clip-path: none;
+    margin: 14px 14px 5px; padding: 12px 14px; border: 1px solid #31415e; border-radius: 12px;
+    background: #19283e; line-height: 1.55; overflow-wrap: anywhere; }
+  .speech::after { content: ""; position: absolute; left: 11%; bottom: -7px; width: 12px; height: 12px;
+    transform: rotate(45deg); border-right: inherit; border-bottom: inherit; background: inherit; }
+  [data-theme="stick-studio"] .speech { background: #fdf3d1; border-color: #a68c43; }
+}
 @media (max-width: 410px) { .transport { gap: 5px; padding-inline: 8px; } #play { min-width: 60px; } }

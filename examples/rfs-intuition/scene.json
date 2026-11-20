@@ -9,7 +9,7 @@
     "height": 720,
     "fps": 30
   },
-  "theme": "dark-academic",
+  "theme": "stick-studio",
   "definitions": [
     {
       "symbol": "X",
@@ -41,9 +41,10 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "wave"
+          "x": 205,
+          "y": 550,
+          "pose": "wave",
+          "bubble": "객체의 존재와 개수가 불확실할 때 어떻게 표현할까요?"
         },
         {
           "id": "question",
@@ -61,10 +62,16 @@
           "y": 400,
           "text": "결과마다 다른 유한 집합으로 표현합니다.",
           "size": 30,
-          "color": "white"
+          "color": "foreground"
         }
       ],
       "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "객체의 존재와 개수가 불확실할 수 있습니다."
+        },
         {
           "at": 1,
           "action": "show",
@@ -75,6 +82,12 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 3,
+          "action": "speak",
+          "target": "teacher",
+          "value": "각 결과를 유한한 객체 집합으로 표현합니다."
         }
       ]
     },
@@ -90,9 +103,10 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "explain"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "랜덤 집합은 객체들의 집합을 결과로 냅니다."
         },
         {
           "id": "sets",
@@ -115,6 +129,12 @@
       ],
       "events": [
         {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "X는 가능한 객체 집합 중 하나를 결과로 냅니다."
+        },
+        {
           "at": 1,
           "action": "show",
           "target": "count"
@@ -124,6 +144,12 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 3,
+          "action": "speak",
+          "target": "teacher",
+          "value": "|X|는 그 집합의 원소 개수입니다."
         }
       ]
     },
@@ -139,9 +165,10 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "idle"
+          "x": 205,
+          "y": 550,
+          "pose": "idle",
+          "bubble": "독립인 두 베르누이 객체의 합집합을 살펴봅니다."
         },
         {
           "id": "a",
@@ -186,10 +213,16 @@
           "y": 490,
           "text": "독립인 두 베르누이 객체의 합집합입니다.",
           "size": 28,
-          "color": "white"
+          "color": "foreground"
         }
       ],
       "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "객체 a의 존재 확률은 0.7입니다."
+        },
         {
           "at": 1,
           "action": "show",
@@ -200,6 +233,18 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": "객체 b의 존재 확률은 0.4입니다."
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "두 존재 사건은 서로 독립입니다."
         }
       ]
     },
@@ -215,9 +260,10 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "idle"
+          "x": 205,
+          "y": 550,
+          "pose": "idle",
+          "bubble": "독립이므로 각 존재와 부재의 확률을 곱합니다."
         },
         {
           "id": "p0",
@@ -226,7 +272,7 @@
           "y": 235,
           "text": "P(X = ∅) = 0.3 × 0.6 = 0.18",
           "size": 29,
-          "color": "white"
+          "color": "foreground"
         },
         {
           "id": "pa",
@@ -258,6 +304,12 @@
       ],
       "events": [
         {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "공집합은 두 객체가 모두 없을 확률입니다."
+        },
+        {
           "at": 1,
           "action": "show",
           "target": "pab"
@@ -267,6 +319,18 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": "각각 하나만 존재하는 확률도 곱해서 구합니다."
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "두 객체가 모두 존재할 확률은 0.28입니다."
         }
       ]
     },
@@ -282,9 +346,10 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "explain"
+          "x": 205,
+          "y": 550,
+          "pose": "explain",
+          "bubble": "서로 다른 한 객체 집합의 확률을 합하면 0.54입니다."
         },
         {
           "id": "c0",
@@ -293,7 +358,7 @@
           "y": 245,
           "text": "P(|X| = 0) = 0.18",
           "size": 32,
-          "color": "white"
+          "color": "foreground"
         },
         {
           "id": "c1",
@@ -320,10 +385,16 @@
           "y": 480,
           "text": "{a}와 {b}는 다른 집합이지만 개수는 1입니다.",
           "size": 27,
-          "color": "white"
+          "color": "foreground"
         }
       ],
       "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "개수가 0일 확률은 0.18입니다."
+        },
         {
           "at": 1,
           "action": "show",
@@ -334,6 +405,18 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": "서로 다른 한 객체 집합의 확률을 더합니다."
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "개수가 2일 확률은 0.28입니다."
         }
       ]
     },
@@ -349,9 +432,10 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "idle"
+          "x": 205,
+          "y": 550,
+          "pose": "idle",
+          "bubble": "같은 크기의 집합 확률을 더하면 개수 분포가 됩니다."
         },
         {
           "id": "r1",
@@ -378,10 +462,16 @@
           "y": 480,
           "text": "독립 베르누이 객체의 합집합은 다중 베르누이입니다.",
           "size": 27,
-          "color": "white"
+          "color": "foreground"
         }
       ],
       "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "X는 어떤 객체가 있는지 나타냅니다."
+        },
         {
           "at": 1,
           "action": "show",
@@ -392,6 +482,18 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "speak",
+          "target": "teacher",
+          "value": "|X|는 객체의 개수만 나타냅니다."
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "독립 베르누이 객체의 합집합을 살펴봤습니다."
         }
       ]
     }

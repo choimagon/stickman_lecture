@@ -1,12 +1,14 @@
 (() => {
   const lesson = globalThis.MATHSCENE_LESSON;
-  const {palette, state, clamp, gaussianPoints, arrowPoints} = MathScene;
+  const {paletteFor, state, clamp, geometry, speech} = MathScene;
+  const palette = paletteFor(lesson.theme);
   const byId = id => document.getElementById(id);
   const ui = Object.fromEntries(["title", "stage", "scene-title", "stage-count", "math", "stick", "play",
     "prev", "next", "seek", "clock", "stage-description", "sliders", "steps", "definitions"].map(id => [id, byId(id)]));
   const {width, height, fps} = lesson.canvas;
   const svgNS = "http://www.w3.org/2000/svg";
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const compact = matchMedia("(max-width: 760px)");
   let time = 0;
   let previous = null;
   let current;
@@ -22,7 +24,7 @@
   }
 
   function mathLayer(layer) {
-    const color = palette[layer.color ?? "white"];
+    const color = palette[layer.color ?? "foreground"];
     const fill = layer.fill ? palette[layer.fill] : "none";
     const w = layer.width ?? 2.5;
     const size = layer.size ?? 32;
@@ -48,15 +50,18 @@
       return element;
     }
     if (layer.type === "circle") return svg("circle", {cx: x, cy: y, r: layer.r, fill, stroke: color, "stroke-width": w});
-    if (layer.type === "rect") return svg("rect", {x, y, width: layer.w, height: layer.h, rx: 5, fill, stroke: color, "stroke-width": w});
-    if (layer.type === "gaussian") return svg("polyline", {points: gaussianPoints(layer).join(" "),
+    if (layer.type === "ellipse") return svg("ellipse", {cx: x, cy: y, rx: layer.rx, ry: layer.ry, fill, stroke: color, "stroke-width": w});
+    if (layer.type === "rect") return svg("rect", {x, y, width: layer.w, height: layer.h, fill, stroke: color, "stroke-width": w});
+    if (layer.type === "polygon") return svg("polygon", {points: layer.points.join(" "), fill,
+      stroke: color, "stroke-width": w, "stroke-linejoin": "round"});
+    if (layer.type === "gaussian" || layer.type === "polyline") return svg("polyline", {points: layer.points.join(" "),
       fill: "none", stroke: color, "stroke-width": w, "stroke-linejoin": "round"});
     const {x1, y1, x2, y2} = layer;
     const line = svg("line", {x1, y1, x2, y2, stroke: color, "stroke-linecap": "round", "stroke-width": w});
     if (layer.type === "line") return line;
     const group = svg("g", {});
     group.append(line);
-    const arrow = arrowPoints(layer, w);
+    const arrow = layer.arrow;
     if (arrow.length) group.append(svg("polygon", {points: arrow.join(" "), fill: color}));
     return group;
   }
@@ -90,15 +95,24 @@
     }
   }
 
+  function mathElement(layer) {
+    const drawn = geometry(layer, {complete: motion.matches});
+    const element = drawn ? mathLayer(drawn) : svg("g", {});
+    element.dataset.layer = layer.id;
+    element.dataset.type = layer.type;
+    element.dataset.progress = motion.matches ? 1 : layer.progress ?? 1;
+    if (!drawn) element.setAttribute("visibility", "hidden");
+    return element;
+  }
+
   function render(forceMath = false) {
     const sceneAtTime = state(lesson, time);
-    current = state(lesson, time, controls.get(sceneAtTime.scene.id));
+    current = state(lesson, time, controls.get(sceneAtTime.scene.id), {reduceMotion: motion.matches});
     const {scene, index} = current;
     if (previous !== index) {
       previous = index;
       ui["scene-title"].textContent = scene.title;
       ui["stage-count"].textContent = (index + 1) + " / " + lesson.scenes.length;
-      ui["stage-description"].textContent = scene.narration;
       ui.prev.disabled = index === 0;
       ui.next.disabled = index + 1 === lesson.scenes.length;
       ui.steps.querySelectorAll("button").forEach((button, i) => {
@@ -111,15 +125,19 @@
     const layers = current.layers.filter(layer => layer.type !== "stick");
     const key = layers.map(layer => layer.id).join("|");
     if (forceMath || ui.math.dataset.key !== key) {
-      ui.math.replaceChildren(...layers.map(layer => {
-        const element = mathLayer(layer);
-        element.dataset.layer = layer.id;
-        element.dataset.type = layer.type;
-        return element;
-      }));
+      ui.math.replaceChildren(...layers.map(mathElement));
       ui.math.dataset.key = key;
+    } else if (!motion.matches) {
+      layers.forEach((layer, i) => {
+        const element = ui.math.children[i];
+        if (layer.progress !== undefined && Number(element.dataset.progress) !== layer.progress) {
+          element.replaceWith(mathElement(layer));
+        }
+      });
     }
-    overlay = MathSceneStick.draw(ui.stick, lesson, current, {captions: false, motion: !motion.matches});
+    const spoken = speech(current);
+    if (ui["stage-description"].textContent !== spoken) ui["stage-description"].textContent = spoken;
+    overlay = MathSceneStick.draw(ui.stick, lesson, current, {speech: !compact.matches, motion: !motion.matches});
     ui.seek.value = Math.round(time * fps);
     ui.clock.value = time.toFixed(1) + " / " + lesson.duration.toFixed(1) + "초";
   }
@@ -150,7 +168,8 @@
   };
 
   document.documentElement.lang = lesson.locale;
-  document.title = lesson.title + " · MathScene";
+  document.documentElement.dataset.theme = lesson.theme;
+  document.title = lesson.title + " · 스틱맨렉처";
   ui.title.textContent = lesson.title;
   ui.stage.style.aspectRatio = width + " / " + height;
   ui.math.setAttribute("viewBox", [0, 0, width, height].join(" "));
@@ -194,7 +213,8 @@
       go(current.index - 1);
     }
   });
-  motion.addEventListener("change", () => render());
+  motion.addEventListener("change", () => render(true));
+  compact.addEventListener("change", () => render());
   render();
   globalThis.mathscenePlayer = {seek, get state() { return current; }, get overlay() { return overlay; }};
 })();

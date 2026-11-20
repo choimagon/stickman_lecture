@@ -24,10 +24,11 @@ FUNCTIONS = {
     "exp": math.exp, "lt": operator.lt,
 }
 VARIADIC = {"add", "mul", "max"}
-BINDABLE = {"x", "y", "x1", "y1", "x2", "y2", "w", "h", "r", "width",
+BINDABLE = {"x", "y", "x1", "y1", "x2", "y2", "w", "h", "r", "rx", "ry", "width",
             "size", "scale", "text", "tex", "mean", "sigma", "bubble", "fill", "color"}
 NUMERIC_FIELDS = BINDABLE - {"text", "tex", "bubble", "fill", "color"}
-COLORS = {"blue", "amber", "teal", "rose", "white", "muted", "grid", "ink"}
+COLORS = {"blue", "amber", "teal", "rose", "white", "muted", "grid", "ink", "foreground", "surface",
+          "blue-tint", "amber-tint", "teal-tint"}
 # Server-side TeX never receives raw input. These browser MathJax extensions are excluded too.
 UNSAFE_TEX = re.compile(r"\\(?:require|input|include|write|openout|href|url|html\w*|style|class|cssId|def|gdef|edef|newcommand|renewcommand)\b", re.I)
 
@@ -129,7 +130,7 @@ def verify_bindings(layer, controls, location):
                     if type(value) not in (int, float) or not math.isfinite(value):
                         raise SceneError(f"binding {k} does not return a finite number")
                     collapsed_rect = layer["type"] == "rect" and k in {"w", "h"} and value == 0
-                    if k in {"w", "h", "r", "size", "scale", "width", "sigma"} and value <= 0 and not collapsed_rect:
+                    if k in {"w", "h", "r", "rx", "ry", "size", "scale", "width", "sigma"} and value <= 0 and not collapsed_rect:
                         raise SceneError(f"binding {k} must be positive")
                 elif k in {"fill", "color"}:
                     if not isinstance(value, str) or value not in COLORS:
@@ -190,6 +191,8 @@ def verify_scene(lesson):
             if control["id"] not in referred:
                 raise SceneError(f"{sid}/{control['id']}: slider has no layer binding")
         last = -1
+        draws = {}
+        shows = {event["target"] for event in scene["events"] if event["action"] == "show"}
         for event in scene["events"]:
             at = require_frame(event["at"], fps, f"{sid}/event")
             if at < last or event["at"] >= scene["duration"]:
@@ -198,8 +201,20 @@ def verify_scene(lesson):
             target = layers.get(event["target"])
             if target is None:
                 raise SceneError(f"{sid}: event target does not exist: {event['target']}")
-            if event["action"] == "gesture" and target["type"] != "stick":
-                raise SceneError(f"{sid}: gesture target must be a stick layer")
+            action = event["action"]
+            if action in {"gesture", "speak"} and target["type"] != "stick":
+                raise SceneError(f"{sid}: {action} target must be a stick layer")
+            if action == "draw":
+                if target["type"] not in {"line", "vector", "gaussian", "polyline", "circle", "ellipse", "rect", "polygon"}:
+                    raise SceneError(f"{sid}: draw target must be a supported stroke or outline")
+                length = require_frame(event["duration"], fps, f"{sid}/draw duration")
+                if length < 1 or at + length >= round(scene["duration"] * fps):
+                    raise SceneError(f"{sid}: draw must leave at least one completed frame inside the scene")
+                if target["id"] in draws or target["id"] in shows:
+                    raise SceneError(f"{sid}/{target['id']}: use one draw event without show")
+                draws[target["id"]] = at + length
+            if action == "hide" and draws.get(target["id"], 0) > at:
+                raise SceneError(f"{sid}/{target['id']}: hide interrupts draw")
     if end != require_frame(lesson["duration"], fps, "duration"):
         raise SceneError("lesson duration does not match the end of the last scene")
     return verify_checks(lesson)

@@ -9,7 +9,7 @@
     "height": 720,
     "fps": 30
   },
-  "theme": "dark-academic",
+  "theme": "stick-studio",
   "definitions": [
     {
       "symbol": "A",
@@ -45,19 +45,9 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "point_right",
-          "bubble": "변환해도 방향이 유지되는 벡터를 찾아봅시다."
-        },
-        {
-          "id": "heading",
-          "type": "text",
-          "x": 430,
-          "y": 205,
-          "text": "왜 고유방향을 찾을까",
-          "size": 34,
-          "color": "white"
+          "x": 205,
+          "y": 550,
+          "pose": "point_right"
         },
         {
           "id": "a",
@@ -75,6 +65,12 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "변환해도 방향이 유지되는 벡터를 찾아봅시다."
         },
         {
           "at": 2,
@@ -95,19 +91,9 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "point_right",
-          "bubble": "고유벡터는 변환 후에도 같은 직선 위에 있습니다."
-        },
-        {
-          "id": "heading",
-          "type": "text",
-          "x": 430,
-          "y": 205,
-          "text": "방향은 그대로",
-          "size": 34,
-          "color": "white"
+          "x": 205,
+          "y": 550,
+          "pose": "point_right"
         },
         {
           "id": "original",
@@ -147,19 +133,33 @@
           "value": "point_right"
         },
         {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "파란 벡터를 변환하기 전의 v로 봅시다."
+        },
+        {
           "at": 2,
-          "action": "show",
-          "target": "original"
+          "action": "draw",
+          "target": "original",
+          "duration": 2
         },
         {
           "at": 4,
           "action": "show",
-          "target": "transformed"
+          "target": "labels"
         },
         {
-          "at": 6,
-          "action": "show",
-          "target": "labels"
+          "at": 5,
+          "action": "speak",
+          "target": "teacher",
+          "value": "변환된 주황 벡터는 같은 직선 방향입니다."
+        },
+        {
+          "at": 5,
+          "action": "draw",
+          "target": "transformed",
+          "duration": 2
         }
       ]
     },
@@ -175,19 +175,9 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "point_right",
-          "bubble": "가로 벡터는 고유벡터지만 대각 벡터는 아닙니다."
-        },
-        {
-          "id": "heading",
-          "type": "text",
-          "x": 430,
-          "y": 205,
-          "text": "계산 예시와 반례",
-          "size": 34,
-          "color": "white"
+          "x": 205,
+          "y": 550,
+          "pose": "point_right"
         },
         {
           "id": "a",
@@ -223,6 +213,35 @@
           "text": "Aw는 w와 평행하지 않습니다.",
           "size": 27,
           "color": "amber"
+        },
+        {
+          "id": "wvec",
+          "type": "vector",
+          "x1": 850,
+          "y1": 535,
+          "x2": 910,
+          "y2": 475,
+          "color": "blue",
+          "width": 3
+        },
+        {
+          "id": "awvec",
+          "type": "vector",
+          "x1": 850,
+          "y1": 535,
+          "x2": 970,
+          "y2": 475,
+          "color": "amber",
+          "width": 3
+        },
+        {
+          "id": "vlabel",
+          "type": "text",
+          "x": 980,
+          "y": 500,
+          "text": "파랑 w  주황 Aw",
+          "size": 19,
+          "color": "white"
         }
       ],
       "events": [
@@ -233,9 +252,21 @@
           "value": "point_right"
         },
         {
-          "at": 2,
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "가로 기저벡터는 두 배가 되어도 방향이 같습니다."
+        },
+        {
+          "at": 1,
           "action": "show",
           "target": "a"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "반례 w는 두 좌표가 모두 1인 대각 벡터입니다."
         },
         {
           "at": 4,
@@ -243,7 +274,30 @@
           "target": "b"
         },
         {
-          "at": 6,
+          "at": 5,
+          "action": "draw",
+          "target": "wvec",
+          "duration": 1.5
+        },
+        {
+          "at": 7,
+          "action": "speak",
+          "target": "teacher",
+          "value": "변환하면 가로 좌표만 두 배가 되어 방향이 달라집니다."
+        },
+        {
+          "at": 7,
+          "action": "draw",
+          "target": "awvec",
+          "duration": 1.5
+        },
+        {
+          "at": 8,
+          "action": "show",
+          "target": "vlabel"
+        },
+        {
+          "at": 9,
           "action": "show",
           "target": "c"
         }
@@ -261,19 +315,9 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "point_right",
-          "bubble": "영벡터가 아닌 벡터가 스칼라 배가 되면 고유벡터입니다."
-        },
-        {
-          "id": "heading",
-          "type": "text",
-          "x": 430,
-          "y": 205,
-          "text": "고유값 방정식",
-          "size": 34,
-          "color": "white"
+          "x": 205,
+          "y": 550,
+          "pose": "point_right"
         },
         {
           "id": "a",
@@ -307,6 +351,12 @@
           "value": "point_right"
         },
         {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "영벡터가 아닌 벡터가 스칼라 배가 되면 고유벡터입니다."
+        },
+        {
           "at": 2,
           "action": "show",
           "target": "a"
@@ -330,19 +380,9 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "point_right",
-          "bubble": "가로 배율을 바꾸면 고유방향은 유지되고 길이가 바뀝니다."
-        },
-        {
-          "id": "heading",
-          "type": "text",
-          "x": 430,
-          "y": 205,
-          "text": "고유값을 바꿔 보기",
-          "size": 34,
-          "color": "white"
+          "x": 205,
+          "y": 550,
+          "pose": "point_right"
         },
         {
           "id": "a",
@@ -407,19 +447,33 @@
           "value": "point_right"
         },
         {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "가로 배율을 바꾸면 고유방향은 유지되고 길이가 바뀝니다."
+        },
+        {
           "at": 2,
           "action": "show",
           "target": "a"
         },
         {
           "at": 4,
-          "action": "show",
-          "target": "axis"
+          "action": "draw",
+          "target": "axis",
+          "duration": 1.2
         },
         {
           "at": 6,
-          "action": "show",
-          "target": "eigen"
+          "action": "draw",
+          "target": "eigen",
+          "duration": 1.2
+        },
+        {
+          "at": 6,
+          "action": "speak",
+          "target": "teacher",
+          "value": "고유값 s를 조절하면 가로 벡터의 길이가 변합니다."
         },
         {
           "at": 8,
@@ -450,19 +504,9 @@
         {
           "id": "teacher",
           "type": "stick",
-          "x": 240,
-          "y": 505,
-          "pose": "point_right",
-          "bubble": "고유벡터는 변환 후 원래 직선 위에 남습니다."
-        },
-        {
-          "id": "heading",
-          "type": "text",
-          "x": 430,
-          "y": 205,
-          "text": "고유방향을 기억하기",
-          "size": 34,
-          "color": "white"
+          "x": 205,
+          "y": 550,
+          "pose": "point_right"
         },
         {
           "id": "a",
@@ -494,6 +538,12 @@
           "action": "gesture",
           "target": "teacher",
           "value": "point_right"
+        },
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "고유벡터는 변환 후 원래 직선 위에 남습니다."
         },
         {
           "at": 2,

@@ -1,0 +1,547 @@
+{
+  "version": "0.1",
+  "title": "도형과 화살표로 설명하는 물의 순환",
+  "locale": "ko-KR",
+  "audience": "undergraduate",
+  "duration": 56,
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "theme": "stick-studio",
+  "definitions": [
+    {
+      "symbol": "증발",
+      "meaning": "액체 물이 수증기가 되는 과정"
+    },
+    {
+      "symbol": "응결",
+      "meaning": "수증기가 액체 물방울이 되는 과정"
+    },
+    {
+      "symbol": "강수",
+      "meaning": "대기에서 비나 눈 등이 지표로 떨어지는 현상"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "evaporation",
+      "stage": "why",
+      "title": "햇빛이 물을 데워요",
+      "start": 0,
+      "duration": 18,
+      "learning_goal": "태양 에너지가 물의 증발을 일으킴을 이해한다.",
+      "narration": "물은 지표와 하늘 사이를 계속 순환합니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "point_right",
+          "bubble": "물은 지표와 하늘 사이를 계속 순환합니다."
+        },
+        {
+          "id": "sun",
+          "type": "circle",
+          "x": 1020,
+          "y": 250,
+          "r": 55,
+          "fill": "amber-tint",
+          "color": "amber",
+          "width": 3
+        },
+        {
+          "id": "sunlabel",
+          "type": "text",
+          "x": 970,
+          "y": 325,
+          "text": "태양",
+          "size": 24,
+          "color": "amber"
+        },
+        {
+          "id": "water",
+          "type": "rect",
+          "x": 475,
+          "y": 490,
+          "w": 575,
+          "h": 105,
+          "fill": "blue-tint",
+          "color": "blue",
+          "width": 3
+        },
+        {
+          "id": "waterlabel",
+          "type": "text",
+          "x": 730,
+          "y": 540,
+          "text": "바다와 호수",
+          "size": 24,
+          "color": "foreground"
+        },
+        {
+          "id": "heat",
+          "type": "vector",
+          "x1": 975,
+          "y1": 320,
+          "x2": 820,
+          "y2": 465,
+          "color": "amber",
+          "width": 4
+        },
+        {
+          "id": "vapor",
+          "type": "vector",
+          "x1": 620,
+          "y1": 478,
+          "x2": 620,
+          "y2": 335,
+          "color": "teal",
+          "width": 4
+        },
+        {
+          "id": "vaporlabel",
+          "type": "text",
+          "x": 645,
+          "y": 365,
+          "text": "수증기",
+          "size": 24,
+          "color": "teal"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "물은 지표와 하늘 사이를 계속 순환합니다."
+        },
+        {
+          "at": 1,
+          "action": "draw",
+          "target": "water",
+          "duration": 2
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "waterlabel"
+        },
+        {
+          "at": 3,
+          "action": "speak",
+          "target": "teacher",
+          "value": "바다와 호수는 순환하는 물의 저장소입니다."
+        },
+        {
+          "at": 4,
+          "action": "draw",
+          "target": "sun",
+          "duration": 1.5
+        },
+        {
+          "at": 5,
+          "action": "show",
+          "target": "sunlabel"
+        },
+        {
+          "at": 6,
+          "action": "speak",
+          "target": "teacher",
+          "value": "태양 에너지가 물을 데웁니다."
+        },
+        {
+          "at": 7,
+          "action": "draw",
+          "target": "heat",
+          "duration": 1.5
+        },
+        {
+          "at": 9,
+          "action": "speak",
+          "target": "teacher",
+          "value": "일부 물은 수증기가 되어 공기 중으로 올라갑니다."
+        },
+        {
+          "at": 10,
+          "action": "draw",
+          "target": "vapor",
+          "duration": 2
+        },
+        {
+          "at": 11,
+          "action": "show",
+          "target": "vaporlabel"
+        }
+      ]
+    },
+    {
+      "id": "condensation",
+      "stage": "intuition",
+      "title": "수증기가 구름이 돼요",
+      "start": 18,
+      "duration": 18,
+      "learning_goal": "상승한 수증기가 냉각되어 구름을 형성함을 이해한다.",
+      "narration": "올라간 공기는 식고 수증기가 작은 물방울이 됩니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "point_right",
+          "bubble": "올라간 공기는 식고 수증기가 작은 물방울이 됩니다."
+        },
+        {
+          "id": "vapor",
+          "type": "vector",
+          "x1": 600,
+          "y1": 540,
+          "x2": 600,
+          "y2": 355,
+          "color": "teal",
+          "width": 4
+        },
+        {
+          "id": "vaporlabel",
+          "type": "text",
+          "x": 460,
+          "y": 470,
+          "text": "수증기 상승",
+          "size": 24,
+          "color": "teal"
+        },
+        {
+          "id": "cloud",
+          "type": "ellipse",
+          "x": 800,
+          "y": 310,
+          "rx": 190,
+          "ry": 85,
+          "fill": "surface",
+          "color": "muted",
+          "width": 3
+        },
+        {
+          "id": "cloudlabel",
+          "type": "text",
+          "x": 750,
+          "y": 300,
+          "text": "구름",
+          "size": 28,
+          "color": "foreground"
+        },
+        {
+          "id": "cool",
+          "type": "vector",
+          "x1": 625,
+          "y1": 350,
+          "x2": 690,
+          "y2": 315,
+          "color": "teal",
+          "width": 4
+        },
+        {
+          "id": "explain",
+          "type": "text",
+          "x": 720,
+          "y": 480,
+          "text": "냉각 → 응결 → 작은 물방울",
+          "size": 24,
+          "color": "foreground"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "수증기를 포함한 공기가 위로 올라갑니다."
+        },
+        {
+          "at": 1,
+          "action": "draw",
+          "target": "vapor",
+          "duration": 2
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "vaporlabel"
+        },
+        {
+          "at": 4,
+          "action": "speak",
+          "target": "teacher",
+          "value": "공기가 식으면 수증기가 작은 물방울로 응결합니다."
+        },
+        {
+          "at": 5,
+          "action": "draw",
+          "target": "cool",
+          "duration": 1.5
+        },
+        {
+          "at": 7,
+          "action": "draw",
+          "target": "cloud",
+          "duration": 2
+        },
+        {
+          "at": 9,
+          "action": "show",
+          "target": "cloudlabel"
+        },
+        {
+          "at": 10,
+          "action": "speak",
+          "target": "teacher",
+          "value": "많은 작은 물방울이 모여 구름을 이룹니다."
+        },
+        {
+          "at": 11,
+          "action": "show",
+          "target": "explain"
+        }
+      ]
+    },
+    {
+      "id": "precipitation",
+      "stage": "recap",
+      "title": "다시 지표로 돌아와요",
+      "start": 36,
+      "duration": 20,
+      "learning_goal": "강수와 지표 유출이 물을 되돌리는 과정을 설명한다.",
+      "narration": "구름에서 내린 물은 땅과 하천을 거쳐 다시 모입니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 205,
+          "y": 550,
+          "pose": "point_right",
+          "bubble": "구름에서 내린 물은 땅과 하천을 거쳐 다시 모입니다."
+        },
+        {
+          "id": "cloud",
+          "type": "ellipse",
+          "x": 650,
+          "y": 280,
+          "rx": 155,
+          "ry": 65,
+          "fill": "surface",
+          "color": "muted",
+          "width": 3
+        },
+        {
+          "id": "cloudlabel",
+          "type": "text",
+          "x": 610,
+          "y": 270,
+          "text": "구름",
+          "size": 24,
+          "color": "foreground"
+        },
+        {
+          "id": "mountain",
+          "type": "polygon",
+          "points": [
+            [
+              490,
+              530
+            ],
+            [
+              690,
+              355
+            ],
+            [
+              875,
+              530
+            ]
+          ],
+          "fill": "teal-tint",
+          "color": "teal",
+          "width": 3
+        },
+        {
+          "id": "landlabel",
+          "type": "text",
+          "x": 590,
+          "y": 510,
+          "text": "땅",
+          "size": 24,
+          "color": "foreground"
+        },
+        {
+          "id": "rain",
+          "type": "vector",
+          "x1": 650,
+          "y1": 350,
+          "x2": 650,
+          "y2": 420,
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "rainlabel",
+          "type": "text",
+          "x": 670,
+          "y": 370,
+          "text": "강수",
+          "size": 24,
+          "color": "blue"
+        },
+        {
+          "id": "river",
+          "type": "polyline",
+          "points": [
+            [
+              740,
+              470
+            ],
+            [
+              790,
+              505
+            ],
+            [
+              850,
+              490
+            ],
+            [
+              915,
+              540
+            ]
+          ],
+          "color": "blue",
+          "width": 5
+        },
+        {
+          "id": "outflow",
+          "type": "vector",
+          "x1": 915,
+          "y1": 540,
+          "x2": 1010,
+          "y2": 540,
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "water",
+          "type": "rect",
+          "x": 1010,
+          "y": 490,
+          "w": 170,
+          "h": 105,
+          "fill": "blue-tint",
+          "color": "blue",
+          "width": 3
+        },
+        {
+          "id": "waterlabel",
+          "type": "text",
+          "x": 1040,
+          "y": 535,
+          "text": "바다",
+          "size": 24,
+          "color": "foreground"
+        },
+        {
+          "id": "recap",
+          "type": "text",
+          "x": 465,
+          "y": 600,
+          "text": "증발 → 응결 → 강수 → 지표 유출",
+          "size": 23,
+          "color": "foreground"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "speak",
+          "target": "teacher",
+          "value": "구름 속 물방울이 커지면 비나 눈으로 내립니다."
+        },
+        {
+          "at": 1,
+          "action": "draw",
+          "target": "cloud",
+          "duration": 1.5
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "cloudlabel"
+        },
+        {
+          "at": 3,
+          "action": "draw",
+          "target": "mountain",
+          "duration": 2
+        },
+        {
+          "at": 5,
+          "action": "show",
+          "target": "landlabel"
+        },
+        {
+          "at": 6,
+          "action": "draw",
+          "target": "rain",
+          "duration": 1.5
+        },
+        {
+          "at": 7,
+          "action": "show",
+          "target": "rainlabel"
+        },
+        {
+          "at": 8,
+          "action": "speak",
+          "target": "teacher",
+          "value": "내린 물의 일부는 땅 위를 흘러 하천으로 갑니다."
+        },
+        {
+          "at": 9,
+          "action": "draw",
+          "target": "river",
+          "duration": 2
+        },
+        {
+          "at": 11,
+          "action": "draw",
+          "target": "outflow",
+          "duration": 1.5
+        },
+        {
+          "at": 12,
+          "action": "draw",
+          "target": "water",
+          "duration": 1.5
+        },
+        {
+          "at": 13,
+          "action": "show",
+          "target": "waterlabel"
+        },
+        {
+          "at": 14,
+          "action": "speak",
+          "target": "teacher",
+          "value": "물이 바다에 모이고 다시 증발하며 순환합니다."
+        },
+        {
+          "at": 15,
+          "action": "show",
+          "target": "recap"
+        }
+      ]
+    }
+  ],
+  "exports": [
+    "web"
+  ],
+  "checks": []
+}

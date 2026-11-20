@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "MathScene Scene IR 0.1",
+  "title": "Stickman Lecture Scene IR 0.1",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "title", "locale", "audience", "duration", "canvas", "theme", "definitions", "scenes", "exports"],
@@ -18,7 +18,7 @@
         "fps": {"type": "integer", "minimum": 12, "maximum": 60}
       }
     },
-    "theme": {"const": "dark-academic"},
+    "theme": {"enum": ["stick-studio", "dark-academic"]},
     "definitions": {"type": "array", "items": {
       "type": "object", "additionalProperties": false, "required": ["symbol", "meaning"],
       "properties": {"symbol": {"$ref": "#/$defs/label"}, "meaning": {"$ref": "#/$defs/label"}}
@@ -31,7 +31,7 @@
     "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$", "maxLength": 64},
     "label": {"type": "string", "minLength": 1, "maxLength": 500},
     "positive": {"type": "number", "exclusiveMinimum": 0},
-    "color": {"enum": ["blue", "amber", "teal", "rose", "white", "muted", "grid", "ink"]},
+    "color": {"enum": ["blue", "amber", "teal", "rose", "white", "muted", "grid", "ink", "foreground", "surface", "blue-tint", "amber-tint", "teal-tint"]},
     "pose": {"enum": ["idle", "point_right", "explain", "wave"]},
     "expr": {
       "anyOf": [
@@ -47,16 +47,20 @@
       "type": "object", "additionalProperties": false, "required": ["id", "type"],
       "properties": {
         "id": {"$ref": "#/$defs/id"},
-        "type": {"enum": ["text", "formula", "line", "circle", "rect", "vector", "gaussian", "stick"]},
+        "type": {"enum": ["text", "formula", "line", "circle", "ellipse", "rect", "polygon", "vector", "gaussian", "polyline", "stick"]},
         "x": {"type": "number"}, "y": {"type": "number"},
         "x1": {"type": "number"}, "y1": {"type": "number"}, "x2": {"type": "number"}, "y2": {"type": "number"},
         "w": {"$ref": "#/$defs/positive"}, "h": {"$ref": "#/$defs/positive"}, "r": {"$ref": "#/$defs/positive"},
+        "rx": {"$ref": "#/$defs/positive"}, "ry": {"$ref": "#/$defs/positive"},
         "color": {"$ref": "#/$defs/color"}, "fill": {"$ref": "#/$defs/color"}, "width": {"$ref": "#/$defs/positive"},
         "size": {"$ref": "#/$defs/positive"}, "scale": {"$ref": "#/$defs/positive"},
         "align": {"enum": ["left", "center", "right"]},
         "text": {"$ref": "#/$defs/label"}, "tex": {"type": "string", "minLength": 1, "maxLength": 1000},
         "symbols": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/label"}},
         "min": {"type": "number"}, "max": {"type": "number"}, "mean": {"type": "number"}, "sigma": {"$ref": "#/$defs/positive"},
+        "points": {"type": "array", "minItems": 2, "maxItems": 1000, "items": {
+          "type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}
+        }},
         "pose": {"$ref": "#/$defs/pose"}, "bubble": {"$ref": "#/$defs/label"},
         "bind": {"type": "object", "additionalProperties": {"$ref": "#/$defs/expr"}}
       },
@@ -65,8 +69,11 @@
         {"if": {"properties": {"type": {"const": "formula"}}}, "then": {"required": ["x", "y", "tex", "symbols"]}},
         {"if": {"properties": {"type": {"enum": ["line", "vector"]}}}, "then": {"required": ["x1", "y1", "x2", "y2"]}},
         {"if": {"properties": {"type": {"const": "circle"}}}, "then": {"required": ["x", "y", "r"]}},
+        {"if": {"properties": {"type": {"const": "ellipse"}}}, "then": {"required": ["x", "y", "rx", "ry"]}},
         {"if": {"properties": {"type": {"const": "rect"}}}, "then": {"required": ["x", "y", "w", "h"]}},
+        {"if": {"properties": {"type": {"const": "polygon"}}}, "then": {"required": ["points"], "properties": {"points": {"minItems": 3}}}},
         {"if": {"properties": {"type": {"const": "gaussian"}}}, "then": {"required": ["x", "y", "w", "h", "min", "max", "mean", "sigma"]}},
+        {"if": {"properties": {"type": {"const": "polyline"}}}, "then": {"required": ["points"]}},
         {"if": {"properties": {"type": {"const": "stick"}}}, "then": {"required": ["x", "y", "pose"]}}
       ]
     },
@@ -82,11 +89,18 @@
         "events": {"type": "array", "items": {
           "type": "object", "additionalProperties": false, "required": ["at", "action", "target"],
           "properties": {
-            "at": {"type": "number", "minimum": 0}, "action": {"enum": ["show", "hide", "gesture"]},
-            "target": {"$ref": "#/$defs/id"}, "value": {"$ref": "#/$defs/pose"}
+            "at": {"type": "number", "minimum": 0}, "action": {"enum": ["show", "hide", "gesture", "speak", "draw"]},
+            "target": {"$ref": "#/$defs/id"}, "value": {"type": "string", "maxLength": 500},
+            "duration": {"$ref": "#/$defs/positive"}
           },
-          "if": {"properties": {"action": {"const": "gesture"}}}, "then": {"required": ["value"]},
-          "else": {"not": {"required": ["value"]}}
+          "allOf": [
+            {"if": {"properties": {"action": {"const": "gesture"}}},
+             "then": {"properties": {"value": {"$ref": "#/$defs/pose"}}}},
+            {"if": {"properties": {"action": {"enum": ["gesture", "speak"]}}},
+             "then": {"required": ["value"]}, "else": {"not": {"required": ["value"]}}},
+            {"if": {"properties": {"action": {"const": "draw"}}},
+             "then": {"required": ["duration"]}, "else": {"not": {"required": ["duration"]}}}
+          ]
         }},
         "interactions": {"type": "array", "items": {
           "type": "object", "additionalProperties": false, "required": ["id", "label", "min", "max", "step", "default"],
