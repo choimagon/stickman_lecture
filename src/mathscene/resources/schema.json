@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MathScene Scene IR 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "title", "locale", "audience", "duration", "canvas", "theme", "definitions", "scenes", "exports"],
+  "properties": {
+    "version": {"const": "0.1"},
+    "title": {"$ref": "#/$defs/label"},
+    "locale": {"type": "string", "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]+)*$"},
+    "audience": {"enum": ["beginner", "undergraduate", "research"]},
+    "duration": {"$ref": "#/$defs/positive"},
+    "canvas": {
+      "type": "object", "additionalProperties": false, "required": ["width", "height", "fps"],
+      "properties": {
+        "width": {"type": "integer", "minimum": 640, "maximum": 3840, "multipleOf": 2},
+        "height": {"type": "integer", "minimum": 360, "maximum": 2160, "multipleOf": 2},
+        "fps": {"type": "integer", "minimum": 12, "maximum": 60}
+      }
+    },
+    "theme": {"const": "dark-academic"},
+    "definitions": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false, "required": ["symbol", "meaning"],
+      "properties": {"symbol": {"$ref": "#/$defs/label"}, "meaning": {"$ref": "#/$defs/label"}}
+    }},
+    "scenes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/scene"}},
+    "exports": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["video", "web"]}},
+    "checks": {"type": "array", "items": {"$ref": "#/$defs/check"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$", "maxLength": 64},
+    "label": {"type": "string", "minLength": 1, "maxLength": 500},
+    "positive": {"type": "number", "exclusiveMinimum": 0},
+    "color": {"enum": ["blue", "amber", "teal", "rose", "white", "muted", "grid", "ink"]},
+    "pose": {"enum": ["idle", "point_right", "explain", "wave"]},
+    "expr": {
+      "anyOf": [
+        {"type": ["number", "string"]},
+        {
+          "type": "array", "minItems": 2, "maxItems": 25,
+          "prefixItems": [{"enum": ["add", "sub", "mul", "div", "max", "pow", "sqrt", "exp", "lt", "select", "round", "concat"]}],
+          "items": {"$ref": "#/$defs/expr"}
+        }
+      ]
+    },
+    "layer": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "type": {"enum": ["text", "formula", "line", "circle", "rect", "vector", "gaussian", "stick"]},
+        "x": {"type": "number"}, "y": {"type": "number"},
+        "x1": {"type": "number"}, "y1": {"type": "number"}, "x2": {"type": "number"}, "y2": {"type": "number"},
+        "w": {"$ref": "#/$defs/positive"}, "h": {"$ref": "#/$defs/positive"}, "r": {"$ref": "#/$defs/positive"},
+        "color": {"$ref": "#/$defs/color"}, "fill": {"$ref": "#/$defs/color"}, "width": {"$ref": "#/$defs/positive"},
+        "size": {"$ref": "#/$defs/positive"}, "scale": {"$ref": "#/$defs/positive"},
+        "align": {"enum": ["left", "center", "right"]},
+        "text": {"$ref": "#/$defs/label"}, "tex": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "symbols": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/label"}},
+        "min": {"type": "number"}, "max": {"type": "number"}, "mean": {"type": "number"}, "sigma": {"$ref": "#/$defs/positive"},
+        "pose": {"$ref": "#/$defs/pose"}, "bubble": {"$ref": "#/$defs/label"},
+        "bind": {"type": "object", "additionalProperties": {"$ref": "#/$defs/expr"}}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "text"}}}, "then": {"required": ["x", "y", "text"]}},
+        {"if": {"properties": {"type": {"const": "formula"}}}, "then": {"required": ["x", "y", "tex", "symbols"]}},
+        {"if": {"properties": {"type": {"enum": ["line", "vector"]}}}, "then": {"required": ["x1", "y1", "x2", "y2"]}},
+        {"if": {"properties": {"type": {"const": "circle"}}}, "then": {"required": ["x", "y", "r"]}},
+        {"if": {"properties": {"type": {"const": "rect"}}}, "then": {"required": ["x", "y", "w", "h"]}},
+        {"if": {"properties": {"type": {"const": "gaussian"}}}, "then": {"required": ["x", "y", "w", "h", "min", "max", "mean", "sigma"]}},
+        {"if": {"properties": {"type": {"const": "stick"}}}, "then": {"required": ["x", "y", "pose"]}}
+      ]
+    },
+    "scene": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "stage", "title", "start", "duration", "learning_goal", "narration", "layers", "events"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"}, "stage": {"enum": ["why", "intuition", "example", "equation", "insight", "recap"]},
+        "title": {"$ref": "#/$defs/label"}, "start": {"type": "number", "minimum": 0},
+        "duration": {"$ref": "#/$defs/positive"}, "learning_goal": {"$ref": "#/$defs/label"},
+        "narration": {"$ref": "#/$defs/label"},
+        "layers": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/layer"}},
+        "events": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["at", "action", "target"],
+          "properties": {
+            "at": {"type": "number", "minimum": 0}, "action": {"enum": ["show", "hide", "gesture"]},
+            "target": {"$ref": "#/$defs/id"}, "value": {"$ref": "#/$defs/pose"}
+          },
+          "if": {"properties": {"action": {"const": "gesture"}}}, "then": {"required": ["value"]},
+          "else": {"not": {"required": ["value"]}}
+        }},
+        "interactions": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["id", "label", "min", "max", "step", "default"],
+          "properties": {
+            "id": {"$ref": "#/$defs/id"}, "label": {"$ref": "#/$defs/label"}, "min": {"type": "number"},
+            "max": {"type": "number"}, "step": {"$ref": "#/$defs/positive"}, "default": {"type": "number"}
+          }
+        }}
+      }
+    },
+    "dims": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 1}},
+    "check": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "scene", "inputs", "actual", "expected"],
+          "properties": {"kind": {"const": "sample"}, "scene": {"$ref": "#/$defs/id"}, "inputs": {"type": "object", "additionalProperties": {"type": "number"}}, "actual": {"$ref": "#/$defs/expr"}, "expected": {"type": "number"}}
+        },
+        {"type": "object", "additionalProperties": false, "required": ["kind", "left", "right", "symbols"],
+          "properties": {"kind": {"const": "equivalent"}, "left": {"$ref": "#/$defs/expr"}, "right": {"$ref": "#/$defs/expr"}, "symbols": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/label"}}}
+        },
+        {"type": "object", "additionalProperties": false, "required": ["kind", "left", "right", "expected"],
+          "properties": {"kind": {"const": "shape"}, "left": {"$ref": "#/$defs/dims"}, "right": {"$ref": "#/$defs/dims"}, "expected": {"$ref": "#/$defs/dims"}}
+        }
+      ]
+    }
+  }
+}

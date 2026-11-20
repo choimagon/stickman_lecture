@@ -1,0 +1,563 @@
+{
+  "version": "0.1",
+  "title": "고유벡터와 고유값",
+  "locale": "ko-KR",
+  "audience": "undergraduate",
+  "duration": 90,
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "theme": "dark-academic",
+  "definitions": [
+    {
+      "symbol": "A",
+      "meaning": "선형 변환 행렬"
+    },
+    {
+      "symbol": "v",
+      "meaning": "0이 아닌 고유벡터"
+    },
+    {
+      "symbol": "lambda",
+      "meaning": "고유값"
+    },
+    {
+      "symbol": "s",
+      "meaning": "가로 방향의 고유값"
+    },
+    {
+      "symbol": "w",
+      "meaning": "고유벡터가 아닌 비교 벡터"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "why",
+      "stage": "why",
+      "title": "왜 고유방향을 찾을까",
+      "start": 0,
+      "duration": 15,
+      "learning_goal": "변환에서 방향이 유지되는 벡터의 의미를 안다.",
+      "narration": "변환해도 방향이 유지되는 벡터를 찾아봅시다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "point_right",
+          "bubble": "변환해도 방향이 유지되는 벡터를 찾아봅시다."
+        },
+        {
+          "id": "heading",
+          "type": "text",
+          "x": 430,
+          "y": 205,
+          "text": "왜 고유방향을 찾을까",
+          "size": 34,
+          "color": "white"
+        },
+        {
+          "id": "a",
+          "type": "text",
+          "x": 430,
+          "y": 310,
+          "text": "복잡한 변환도 특별한 방향에서는 단순합니다.",
+          "size": 27,
+          "color": "teal"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "a"
+        }
+      ]
+    },
+    {
+      "id": "intuition",
+      "stage": "intuition",
+      "title": "방향은 그대로",
+      "start": 15,
+      "duration": 15,
+      "learning_goal": "고유벡터의 방향과 길이 변화를 이해한다.",
+      "narration": "고유벡터는 변환 후에도 같은 직선 위에 있습니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "point_right",
+          "bubble": "고유벡터는 변환 후에도 같은 직선 위에 있습니다."
+        },
+        {
+          "id": "heading",
+          "type": "text",
+          "x": 430,
+          "y": 205,
+          "text": "방향은 그대로",
+          "size": 34,
+          "color": "white"
+        },
+        {
+          "id": "original",
+          "type": "vector",
+          "x1": 500,
+          "y1": 390,
+          "x2": 650,
+          "y2": 390,
+          "color": "blue",
+          "width": 4
+        },
+        {
+          "id": "transformed",
+          "type": "vector",
+          "x1": 500,
+          "y1": 460,
+          "x2": 800,
+          "y2": 460,
+          "color": "amber",
+          "width": 4
+        },
+        {
+          "id": "labels",
+          "type": "text",
+          "x": 430,
+          "y": 510,
+          "text": "파란색: v     주황색: Av",
+          "size": 27,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "original"
+        },
+        {
+          "at": 4,
+          "action": "show",
+          "target": "transformed"
+        },
+        {
+          "at": 6,
+          "action": "show",
+          "target": "labels"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "stage": "example",
+      "title": "계산 예시와 반례",
+      "start": 30,
+      "duration": 15,
+      "learning_goal": "행렬을 적용해 고유벡터와 반례를 구분한다.",
+      "narration": "가로 벡터는 고유벡터지만 대각 벡터는 아닙니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "point_right",
+          "bubble": "가로 벡터는 고유벡터지만 대각 벡터는 아닙니다."
+        },
+        {
+          "id": "heading",
+          "type": "text",
+          "x": 430,
+          "y": 205,
+          "text": "계산 예시와 반례",
+          "size": 34,
+          "color": "white"
+        },
+        {
+          "id": "a",
+          "type": "formula",
+          "x": 430,
+          "y": 290,
+          "tex": "A=\\begin{bmatrix}2&0\\\\0&1\\end{bmatrix},\\quad v=\\begin{bmatrix}1\\\\0\\end{bmatrix},\\quad Av=\\begin{bmatrix}2\\\\0\\end{bmatrix}",
+          "size": 32,
+          "symbols": [
+            "A",
+            "v"
+          ],
+          "color": "blue"
+        },
+        {
+          "id": "b",
+          "type": "formula",
+          "x": 430,
+          "y": 420,
+          "tex": "w=\\begin{bmatrix}1\\\\1\\end{bmatrix},\\quad Aw=\\begin{bmatrix}2\\\\1\\end{bmatrix}",
+          "size": 32,
+          "symbols": [
+            "A",
+            "w"
+          ],
+          "color": "blue"
+        },
+        {
+          "id": "c",
+          "type": "text",
+          "x": 430,
+          "y": 540,
+          "text": "Aw는 w와 평행하지 않습니다.",
+          "size": 27,
+          "color": "amber"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "a"
+        },
+        {
+          "at": 4,
+          "action": "show",
+          "target": "b"
+        },
+        {
+          "at": 6,
+          "action": "show",
+          "target": "c"
+        }
+      ]
+    },
+    {
+      "id": "equation",
+      "stage": "equation",
+      "title": "고유값 방정식",
+      "start": 45,
+      "duration": 15,
+      "learning_goal": "고유벡터와 고유값을 식으로 정의한다.",
+      "narration": "영벡터가 아닌 벡터가 스칼라 배가 되면 고유벡터입니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "point_right",
+          "bubble": "영벡터가 아닌 벡터가 스칼라 배가 되면 고유벡터입니다."
+        },
+        {
+          "id": "heading",
+          "type": "text",
+          "x": 430,
+          "y": 205,
+          "text": "고유값 방정식",
+          "size": 34,
+          "color": "white"
+        },
+        {
+          "id": "a",
+          "type": "formula",
+          "x": 430,
+          "y": 310,
+          "tex": "A\\mathbf{v}=\\lambda\\mathbf{v},\\quad \\mathbf{v}\\ne\\mathbf{0}",
+          "size": 32,
+          "symbols": [
+            "A",
+            "v",
+            "lambda"
+          ],
+          "color": "blue"
+        },
+        {
+          "id": "b",
+          "type": "text",
+          "x": 430,
+          "y": 420,
+          "text": "λ는 길이와 방향의 배율입니다.",
+          "size": 27,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "a"
+        },
+        {
+          "at": 4,
+          "action": "show",
+          "target": "b"
+        }
+      ]
+    },
+    {
+      "id": "insight",
+      "stage": "insight",
+      "title": "고유값을 바꿔 보기",
+      "start": 60,
+      "duration": 15,
+      "learning_goal": "고유값에 따른 고유벡터의 길이 변화를 관찰한다.",
+      "narration": "가로 배율을 바꾸면 고유방향은 유지되고 길이가 바뀝니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "point_right",
+          "bubble": "가로 배율을 바꾸면 고유방향은 유지되고 길이가 바뀝니다."
+        },
+        {
+          "id": "heading",
+          "type": "text",
+          "x": 430,
+          "y": 205,
+          "text": "고유값을 바꿔 보기",
+          "size": 34,
+          "color": "white"
+        },
+        {
+          "id": "a",
+          "type": "formula",
+          "x": 430,
+          "y": 260,
+          "tex": "A=\\operatorname{diag}(s,1),\\quad v=(1,0)",
+          "size": 32,
+          "symbols": [
+            "A",
+            "s",
+            "v"
+          ],
+          "color": "blue"
+        },
+        {
+          "id": "axis",
+          "type": "line",
+          "x1": 500,
+          "y1": 430,
+          "x2": 1030,
+          "y2": 430,
+          "color": "muted",
+          "width": 2
+        },
+        {
+          "id": "eigen",
+          "type": "vector",
+          "x1": 500,
+          "y1": 430,
+          "x2": 740,
+          "y2": 430,
+          "color": "teal",
+          "width": 4,
+          "bind": {
+            "x2": [
+              "add",
+              500,
+              [
+                "mul",
+                120,
+                "s"
+              ]
+            ]
+          }
+        },
+        {
+          "id": "label",
+          "type": "text",
+          "x": 430,
+          "y": 500,
+          "text": "청록색: Av. 같은 가로 직선 위에 있습니다.",
+          "size": 27,
+          "color": "teal"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "a"
+        },
+        {
+          "at": 4,
+          "action": "show",
+          "target": "axis"
+        },
+        {
+          "at": 6,
+          "action": "show",
+          "target": "eigen"
+        },
+        {
+          "at": 8,
+          "action": "show",
+          "target": "label"
+        }
+      ],
+      "interactions": [
+        {
+          "id": "s",
+          "label": "고유값 s",
+          "min": 1,
+          "max": 4,
+          "step": 1,
+          "default": 2
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "stage": "recap",
+      "title": "고유방향을 기억하기",
+      "start": 75,
+      "duration": 15,
+      "learning_goal": "고유벡터의 정의와 반례를 요약한다.",
+      "narration": "고유벡터는 변환 후 원래 직선 위에 남습니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "point_right",
+          "bubble": "고유벡터는 변환 후 원래 직선 위에 남습니다."
+        },
+        {
+          "id": "heading",
+          "type": "text",
+          "x": 430,
+          "y": 205,
+          "text": "고유방향을 기억하기",
+          "size": 34,
+          "color": "white"
+        },
+        {
+          "id": "a",
+          "type": "formula",
+          "x": 430,
+          "y": 310,
+          "tex": "A\\mathbf{v}=\\lambda\\mathbf{v},\\quad \\mathbf{v}\\ne\\mathbf{0}",
+          "size": 32,
+          "symbols": [
+            "A",
+            "v",
+            "lambda"
+          ],
+          "color": "blue"
+        },
+        {
+          "id": "b",
+          "type": "text",
+          "x": 430,
+          "y": 420,
+          "text": "방향이 달라지는 벡터는 고유벡터가 아닙니다.",
+          "size": 27,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 0,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        },
+        {
+          "at": 2,
+          "action": "show",
+          "target": "a"
+        },
+        {
+          "at": 4,
+          "action": "show",
+          "target": "b"
+        }
+      ]
+    }
+  ],
+  "exports": [
+    "web"
+  ],
+  "checks": [
+    {
+      "kind": "sample",
+      "scene": "insight",
+      "inputs": {
+        "s": 2
+      },
+      "actual": [
+        "mul",
+        "s",
+        1
+      ],
+      "expected": 2
+    },
+    {
+      "kind": "shape",
+      "left": [
+        2,
+        2
+      ],
+      "right": [
+        2,
+        1
+      ],
+      "expected": [
+        2,
+        1
+      ]
+    },
+    {
+      "kind": "sample",
+      "scene": "example",
+      "inputs": {},
+      "actual": [
+        "sub",
+        [
+          "mul",
+          2,
+          1
+        ],
+        [
+          "mul",
+          1,
+          1
+        ]
+      ],
+      "expected": 1
+    }
+  ]
+}

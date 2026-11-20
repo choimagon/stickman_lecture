@@ -1,0 +1,429 @@
+{
+  "version": "0.1",
+  "title": "랜덤 유한 집합과 독립 베르누이 객체",
+  "locale": "ko-KR",
+  "audience": "undergraduate",
+  "duration": 36,
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "theme": "dark-academic",
+  "definitions": [
+    {
+      "symbol": "X",
+      "meaning": "랜덤 유한 집합"
+    },
+    {
+      "symbol": "|X|",
+      "meaning": "집합 X의 원소 개수"
+    },
+    {
+      "symbol": "a",
+      "meaning": "첫 번째 객체"
+    },
+    {
+      "symbol": "b",
+      "meaning": "두 번째 객체"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "why",
+      "stage": "why",
+      "title": "불확실한 객체들",
+      "start": 0,
+      "duration": 6,
+      "learning_goal": "불확실한 객체들",
+      "narration": "객체의 존재와 개수가 불확실할 때 어떻게 표현할까요?",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "wave"
+        },
+        {
+          "id": "question",
+          "type": "text",
+          "x": 440,
+          "y": 300,
+          "text": "객체가 몇 개이고 무엇이 존재할까요?",
+          "size": 36,
+          "color": "teal"
+        },
+        {
+          "id": "explain",
+          "type": "text",
+          "x": 440,
+          "y": 400,
+          "text": "결과마다 다른 유한 집합으로 표현합니다.",
+          "size": 30,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "explain"
+        },
+        {
+          "at": 1,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        }
+      ]
+    },
+    {
+      "id": "intuition",
+      "stage": "intuition",
+      "title": "집합과 개수",
+      "start": 6,
+      "duration": 6,
+      "learning_goal": "집합과 개수",
+      "narration": "랜덤 집합은 객체들의 집합을 결과로 냅니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "explain"
+        },
+        {
+          "id": "sets",
+          "type": "text",
+          "x": 440,
+          "y": 260,
+          "text": "가능한 집합 X:  ∅,  {a},  {b},  {a,b}",
+          "size": 34,
+          "color": "blue"
+        },
+        {
+          "id": "count",
+          "type": "text",
+          "x": 440,
+          "y": 390,
+          "text": "|X|는 집합에 들어 있는 객체의 개수",
+          "size": 32,
+          "color": "amber"
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "count"
+        },
+        {
+          "at": 1,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "stage": "example",
+      "title": "독립 베르누이 객체의 합집합",
+      "start": 12,
+      "duration": 6,
+      "learning_goal": "독립 베르누이 객체의 합집합이 다중 베르누이 집합의 한 예임을 이해한다.",
+      "narration": "독립인 두 베르누이 객체의 합집합을 살펴봅니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "idle"
+        },
+        {
+          "id": "a",
+          "type": "circle",
+          "x": 550,
+          "y": 300,
+          "r": 45,
+          "fill": "blue",
+          "color": "blue"
+        },
+        {
+          "id": "b",
+          "type": "circle",
+          "x": 850,
+          "y": 300,
+          "r": 45,
+          "fill": "amber",
+          "color": "amber"
+        },
+        {
+          "id": "al",
+          "type": "text",
+          "x": 520,
+          "y": 405,
+          "text": "a: 0.7",
+          "size": 34,
+          "color": "blue"
+        },
+        {
+          "id": "bl",
+          "type": "text",
+          "x": 820,
+          "y": 405,
+          "text": "b: 0.4",
+          "size": 34,
+          "color": "amber"
+        },
+        {
+          "id": "ind",
+          "type": "text",
+          "x": 480,
+          "y": 490,
+          "text": "독립인 두 베르누이 객체의 합집합입니다.",
+          "size": 28,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "ind"
+        },
+        {
+          "at": 1,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        }
+      ]
+    },
+    {
+      "id": "equation",
+      "stage": "equation",
+      "title": "가능한 집합의 확률",
+      "start": 18,
+      "duration": 6,
+      "learning_goal": "가능한 집합의 확률",
+      "narration": "독립이므로 각 존재와 부재의 확률을 곱합니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "idle"
+        },
+        {
+          "id": "p0",
+          "type": "text",
+          "x": 440,
+          "y": 235,
+          "text": "P(X = ∅) = 0.3 × 0.6 = 0.18",
+          "size": 29,
+          "color": "white"
+        },
+        {
+          "id": "pa",
+          "type": "text",
+          "x": 440,
+          "y": 305,
+          "text": "P(X = {a}) = 0.7 × 0.6 = 0.42",
+          "size": 29,
+          "color": "blue"
+        },
+        {
+          "id": "pb",
+          "type": "text",
+          "x": 440,
+          "y": 375,
+          "text": "P(X = {b}) = 0.3 × 0.4 = 0.12",
+          "size": 29,
+          "color": "amber"
+        },
+        {
+          "id": "pab",
+          "type": "text",
+          "x": 440,
+          "y": 445,
+          "text": "P(X = {a,b}) = 0.7 × 0.4 = 0.28",
+          "size": 29,
+          "color": "teal"
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "pab"
+        },
+        {
+          "at": 1,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        }
+      ]
+    },
+    {
+      "id": "insight",
+      "stage": "insight",
+      "title": "개수 분포",
+      "start": 24,
+      "duration": 6,
+      "learning_goal": "개수 분포",
+      "narration": "서로 다른 한 객체 집합의 확률을 합하면 0.54입니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "explain"
+        },
+        {
+          "id": "c0",
+          "type": "text",
+          "x": 440,
+          "y": 245,
+          "text": "P(|X| = 0) = 0.18",
+          "size": 32,
+          "color": "white"
+        },
+        {
+          "id": "c1",
+          "type": "text",
+          "x": 440,
+          "y": 325,
+          "text": "P(|X| = 1) = 0.42 + 0.12 = 0.54",
+          "size": 32,
+          "color": "amber"
+        },
+        {
+          "id": "c2",
+          "type": "text",
+          "x": 440,
+          "y": 405,
+          "text": "P(|X| = 2) = 0.28",
+          "size": 32,
+          "color": "teal"
+        },
+        {
+          "id": "different",
+          "type": "text",
+          "x": 440,
+          "y": 480,
+          "text": "{a}와 {b}는 다른 집합이지만 개수는 1입니다.",
+          "size": 27,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "different"
+        },
+        {
+          "at": 1,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        }
+      ]
+    },
+    {
+      "id": "recap",
+      "stage": "recap",
+      "title": "집합과 개수는 다릅니다",
+      "start": 30,
+      "duration": 6,
+      "learning_goal": "집합과 개수는 다릅니다",
+      "narration": "같은 크기의 집합 확률을 더하면 개수 분포가 됩니다.",
+      "layers": [
+        {
+          "id": "teacher",
+          "type": "stick",
+          "x": 240,
+          "y": 505,
+          "pose": "idle"
+        },
+        {
+          "id": "r1",
+          "type": "text",
+          "x": 440,
+          "y": 285,
+          "text": "X: 어떤 객체가 존재하는가",
+          "size": 34,
+          "color": "blue"
+        },
+        {
+          "id": "r2",
+          "type": "text",
+          "x": 440,
+          "y": 390,
+          "text": "|X|: 객체가 몇 개인가",
+          "size": 34,
+          "color": "amber"
+        },
+        {
+          "id": "r3",
+          "type": "text",
+          "x": 440,
+          "y": 480,
+          "text": "독립 베르누이 객체의 합집합은 다중 베르누이입니다.",
+          "size": 27,
+          "color": "white"
+        }
+      ],
+      "events": [
+        {
+          "at": 1,
+          "action": "show",
+          "target": "r3"
+        },
+        {
+          "at": 1,
+          "action": "gesture",
+          "target": "teacher",
+          "value": "point_right"
+        }
+      ]
+    }
+  ],
+  "exports": [
+    "video",
+    "web"
+  ],
+  "checks": [
+    {
+      "kind": "sample",
+      "scene": "equation",
+      "inputs": {},
+      "actual": [
+        "add",
+        0.18,
+        0.42,
+        0.12,
+        0.28
+      ],
+      "expected": 1
+    },
+    {
+      "kind": "sample",
+      "scene": "insight",
+      "inputs": {},
+      "actual": [
+        "add",
+        0.42,
+        0.12
+      ],
+      "expected": 0.54
+    }
+  ]
+}

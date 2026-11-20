@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MathScene</title>
+  <link rel="stylesheet" href="vendor/katex.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="vendor/katex.min.js"></script>
+  <script defer src="scene-data.js"></script>
+  <script defer src="core.js"></script>
+  <script defer src="stick.js"></script>
+  <script defer src="player.js"></script>
+</head>
+<body>
+  <main>
+    <header class="masthead">
+      <span class="brand">Math<span>Scene</span></span>
+      <h1 id="title"></h1>
+    </header>
+    <div class="workspace">
+      <section class="viewer" aria-label="강의 플레이어">
+        <div class="stage" id="stage" role="img" aria-labelledby="stage-description">
+          <div class="stage-header"><div id="scene-title"></div><div id="stage-count"></div></div>
+          <svg id="math"></svg><canvas id="stick" aria-hidden="true"></canvas>
+        </div>
+        <div class="transport">
+          <button id="play" type="button">재생</button>
+          <button id="prev" type="button" aria-label="이전 단계">‹</button>
+          <button id="next" type="button" aria-label="다음 단계">›</button>
+          <label class="sr-only" for="seek">재생 위치</label>
+          <input type="range" id="seek" min="0" value="0">
+          <output id="clock"></output>
+        </div>
+        <p class="caption" id="stage-description" aria-live="polite"></p>
+        <div id="sliders" hidden></div>
+      </section>
+      <aside aria-label="강의 목차">
+        <h2>강의 단계</h2>
+        <ol id="steps"></ol>
+        <details id="definitions"><summary>기호와 용어</summary><dl></dl></details>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
